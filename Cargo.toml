@@ -1,0 +1,15 @@
+[package]
+name = "murmuration"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bevy_app = { git = "https://github.com/james-j-obrien/bevy", rev = "84ff2c71accf3735587aa7a7a023395b539c9c71", default-features = false }
+bevy_ecs = { git = "https://github.com/james-j-obrien/bevy", rev = "84ff2c71accf3735587aa7a7a023395b539c9c71", default-features = false }
+bevy_transform = { git = "https://github.com/james-j-obrien/bevy", rev = "84ff2c71accf3735587aa7a7a023395b539c9c71", default-features = false } # TODO: Maybe optional?
+bytemuck = "1.14.3"
+ghost = "0.1.17"
+glam = "0.25.0"
+slab = "0.4.9"
