@@ -1,7 +1,6 @@
+use nonmax::NonMaxU32;
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
-use std::hint::unreachable_unchecked;
-use std::num::NonZeroU32;
 
 use slab::Slab;
 
@@ -11,10 +10,11 @@ pub mod point;
 
 pub struct Octree<D, P: Point> {
     branches: Slab<Branch<D, P>>,
+    root: Option<BranchKey>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-struct BranchKey(NonZeroU32);
+struct BranchKey(NonMaxU32);
 
 enum Branch<D, P: Point> {
     Split([Option<BranchKey>; 8]),
@@ -39,17 +39,10 @@ impl<D, P: Point> Branch<D, P> {
 
 impl<D, P: Point> Default for Octree<D, P> {
     fn default() -> Self {
-        let mut slab = Slab::new();
-        assert_eq!(
-            slab.insert(Branch::Skip {
-                point: GenVec::DEFAULT,
-                point_depth: 0,
-                data: None,
-                child: None
-            }),
-            0
-        );
-        Self { branches: slab }
+        Self {
+            branches: Slab::new(),
+            root: None,
+        }
     }
 }
 
@@ -66,35 +59,12 @@ impl<D, P: Point> Octree<D, P> {
 
     fn add_branch(&mut self, branch: Branch<D, P>) -> BranchKey {
         let key = self.branches.insert(branch);
-        // SAFETY: The root node will always have taken the zero slot and we can't delete it
-        //  (because remove_branch takes a BranchKey which can't be zero)
-        unsafe { BranchKey(NonZeroU32::new_unchecked(key as u32)) }
+        BranchKey(NonMaxU32::new(key as u32).expect("Octree key overflowed 2^32-1"))
     }
 
     fn remove_branch(&mut self, branch: BranchKey) {
         let key: u32 = branch.0.into();
         self.branches.remove(key as usize);
-    }
-
-    fn get_root_child(&self) -> Option<BranchKey> {
-        // SAFETY: The root node cannot be deleted so will always exist.
-        let root = unsafe { self.branches.get(0).unwrap_unchecked() };
-        if let Branch::Skip { child, .. } = root {
-            *child
-        } else {
-            // SAFETY: We don't allow direct access to the root and it starts as a skip
-            unsafe { unreachable_unchecked() }
-        }
-    }
-
-    fn set_root_child(&mut self, branch: BranchKey) {
-        let root = unsafe { self.branches.get_mut(0).unwrap_unchecked() };
-        if let Branch::Skip { child, .. } = root {
-            *child = Some(branch);
-        } else {
-            // SAFETY: We don't allow direct access to the root and it starts as a skip
-            unsafe { unreachable_unchecked() }
-        };
     }
 
     pub fn new() -> Self {
@@ -103,7 +73,7 @@ impl<D, P: Point> Octree<D, P> {
 
     pub fn get_single(&self, point: P) -> Option<&D> {
         let point = point.get_point();
-        self.get_root_child()
+        self.root
             .and_then(|b| self.get_single_from_branch(b, point, 0))
     }
 
@@ -141,9 +111,9 @@ impl<D, P: Point> Octree<D, P> {
 
     pub fn add(&mut self, point: P, data: D) {
         let point = point.get_point();
-        if let Some(child_key) = self.get_root_child() {
+        if let Some(child_key) = self.root {
             if let Some(branch) = self.add_to_branch(child_key, data, point, 0) {
-                self.set_root_child(branch);
+                self.root = Some(branch);
             }
         } else {
             let branch = self.add_branch(Branch::Skip {
@@ -152,7 +122,7 @@ impl<D, P: Point> Octree<D, P> {
                 data: Some(data),
                 child: None,
             });
-            self.set_root_child(branch);
+            self.root = Some(branch);
         }
     }
 }
@@ -295,6 +265,7 @@ where
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Octree")
+            .field("root", &self.root)
             .field(
                 "branches",
                 &self.branches.iter().collect::<BTreeMap<_, _>>(),

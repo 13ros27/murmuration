@@ -12,4 +12,5 @@ bevy_transform = { git = "https://github.com/james-j-obrien/bevy", rev = "84ff2c
 bytemuck = "1.14.3"
 ghost = "0.1.17"
 glam = "0.25.0"
+nonmax = "0.5.5"
 slab = "0.4.9"

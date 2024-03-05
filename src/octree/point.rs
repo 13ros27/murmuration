@@ -61,13 +61,11 @@ mod sealed {
 
 pub trait OrderedBinary: Clone + PartialEq {
     type Ordered: sealed::Unsigned;
-    const DEFAULT: Self::Ordered;
     fn to_ordered(self) -> Self::Ordered;
 }
 
 impl OrderedBinary for u32 {
     type Ordered = u32;
-    const DEFAULT: u32 = 0;
     fn to_ordered(self) -> u32 {
         self
     }
@@ -75,7 +73,6 @@ impl OrderedBinary for u32 {
 
 impl OrderedBinary for u64 {
     type Ordered = u64;
-    const DEFAULT: u64 = 0;
     fn to_ordered(self) -> u64 {
         self
     }
@@ -91,9 +88,6 @@ impl<P: Point, const N: usize> PartialEq for GenVec<P, N> {
 }
 
 impl<P: Point, const N: usize> GenVec<P, N> {
-    /// A default value, not necessarily zero
-    pub(crate) const DEFAULT: Self = GenVec([P::Data::DEFAULT; N]);
-
     pub fn new(data: [<P::Data as OrderedBinary>::Ordered; N]) -> Self {
         Self(data)
     }
