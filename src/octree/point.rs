@@ -26,6 +26,8 @@ mod sealed {
         + Ord
         + Hash
         + Pod
+        + Send
+        + Sync
     {
         fn leading_zeros(self) -> u8;
     }

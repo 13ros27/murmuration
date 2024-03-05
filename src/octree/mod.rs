@@ -7,7 +7,7 @@ use slab::Slab;
 
 use point::{GenVec, Point};
 
-mod point;
+pub mod point;
 
 pub struct Octree<D, P: Point> {
     branches: Slab<Branch<D, P>>,
