@@ -1,4 +1,4 @@
-use glam::UVec3;
+use glam::{U64Vec3, UVec3};
 use std::ops::BitXor;
 
 use crate::const_iter::{ConstArrayIter, ConstCollect};
@@ -139,6 +139,13 @@ pub trait Point: Clone + Sized {
 
 impl Point for UVec3 {
     type Data = u32;
+    fn get_point(&self) -> GenVec<Self> {
+        GenVec([self.x, self.y, self.z])
+    }
+}
+
+impl Point for U64Vec3 {
+    type Data = u64;
     fn get_point(&self) -> GenVec<Self> {
         GenVec([self.x, self.y, self.z])
     }

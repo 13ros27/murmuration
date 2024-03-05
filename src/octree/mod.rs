@@ -20,7 +20,7 @@ enum Branch<D, P: Point> {
     Split([Option<BranchKey>; 8]),
     Skip {
         point: GenVec<P>,
-        point_depth: u8, // TODO: Potential savings by coming this with data (data is always at depth 32)
+        point_depth: u8,
         data: Option<D>,
         child: Option<BranchKey>,
     },
