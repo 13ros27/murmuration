@@ -27,16 +27,7 @@ enum Branch<D, P: Point> {
 }
 
 impl<D, P: Point> Branch<D, P> {
-    fn new_leaf(data: Option<D>) -> Self {
-        Branch::Skip {
-            point: GenVec::DEFAULT,
-            point_depth: 0,
-            data,
-            child: None,
-        }
-    }
-
-    fn new_full_point(point: GenVec<P>, data: D) -> Self {
+    fn new_data(point: GenVec<P>, data: D) -> Self {
         Branch::Skip {
             point,
             point_depth: P::MAX_DEPTH,
@@ -49,7 +40,15 @@ impl<D, P: Point> Branch<D, P> {
 impl<D, P: Point> Default for Octree<D, P> {
     fn default() -> Self {
         let mut slab = Slab::new();
-        assert_eq!(slab.insert(Branch::new_leaf(None)), 0);
+        assert_eq!(
+            slab.insert(Branch::Skip {
+                point: GenVec::DEFAULT,
+                point_depth: 0,
+                data: None,
+                child: None
+            }),
+            0
+        );
         Self { branches: slab }
     }
 }
@@ -184,13 +183,13 @@ impl<D, P: Point> Octree<D, P> {
                             self.set_skip_child(branch, new);
                         }
                     } else {
-                        let new = self.add_branch(Branch::new_full_point(point, data));
+                        let new = self.add_branch(Branch::new_data(point, data));
                         self.add_duplicate(branch, new);
                     }
                     None
                 } else {
                     let child_point = child_point.clone();
-                    let new = self.add_branch(Branch::new_full_point(point.clone(), data));
+                    let new = self.add_branch(Branch::new_data(point.clone(), data));
                     let split = self.add_new_split(new, branch, &point, &child_point, shared);
 
                     if shared > 0 {
@@ -213,7 +212,7 @@ impl<D, P: Point> Octree<D, P> {
                         self.set_split_child(branch, ind, new);
                     }
                 } else {
-                    let new = self.add_branch(Branch::new_full_point(point, data));
+                    let new = self.add_branch(Branch::new_data(point, data));
                     self.set_split_child(branch, ind, new);
                 }
                 None
