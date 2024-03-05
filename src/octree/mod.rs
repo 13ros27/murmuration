@@ -156,8 +156,6 @@ impl<D, P: Point> Octree<D, P> {
             self.set_root_child(branch);
         }
     }
-
-    pub fn remove(&mut self, point: P, data: D) {}
 }
 
 impl<D, P: Point> Octree<D, P> {
