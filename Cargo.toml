@@ -14,3 +14,15 @@ ghost = "0.1.17"
 glam = "0.25.0"
 nonmax = "0.5.5"
 slab = "0.4.9"
+
+[dev-dependencies]
+criterion = "0.5.1"
+rand = "0.8.5"
+
+[[bench]]
+name = "octree"
+harness = false
+
+[profile.release]
+debug = true
+strip = false

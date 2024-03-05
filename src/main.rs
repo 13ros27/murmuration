@@ -1,6 +1,7 @@
 use glam::UVec3;
-use murmuration::octree::Octree;
 use std::num::NonZeroU64;
+
+use murmuration::octree::Octree;
 
 fn main() {
     let mut tree = Octree::new();
