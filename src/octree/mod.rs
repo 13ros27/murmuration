@@ -20,17 +20,20 @@ enum Branch<D, P: Point> {
     Skip {
         point: PointData<P>,
         point_depth: u8,
-        data: Option<D>,
+        child: BranchKey,
+    },
+    Leaf {
+        point: PointData<P>,
+        data: D,
         child: Option<BranchKey>,
     },
 }
 
 impl<D, P: Point> Branch<D, P> {
     fn new_data(point: PointData<P>, data: D) -> Self {
-        Branch::Skip {
+        Branch::Leaf {
             point,
-            point_depth: P::MAX_DEPTH,
-            data: Some(data),
+            data,
             child: None,
         }
     }
@@ -81,23 +84,24 @@ impl<D, P: Point> Octree<D, P> {
 
         loop {
             match self.get_branch(branch) {
+                Branch::Leaf {
+                    point: skip_point,
+                    data,
+                    ..
+                } => {
+                    return (&point == skip_point).then_some(data);
+                }
                 Branch::Skip {
                     point: skip_point,
                     point_depth: skip_depth,
-                    data,
                     child,
                 } => {
                     let shared = (&point ^ skip_point).leading_zeros();
-                    if shared == 32 && *skip_depth == 32 {
-                        return data.as_ref();
+                    if shared >= *skip_depth {
+                        branch = *child;
+                        depth = *skip_depth;
                     } else {
-                        match child {
-                            Some(child) if shared >= *skip_depth => {
-                                branch = *child;
-                                depth = *skip_depth;
-                            }
-                            _ => return None,
-                        }
+                        return None;
                     }
                 }
                 Branch::Split(children) => {
@@ -120,12 +124,7 @@ impl<D, P: Point> Octree<D, P> {
                 self.root = Some(branch);
             }
         } else {
-            let branch = self.add_branch(Branch::Skip {
-                point,
-                point_depth: P::MAX_DEPTH,
-                data: Some(data),
-                child: None,
-            });
+            let branch = self.add_branch(Branch::new_data(point, data));
             self.root = Some(branch);
         }
     }
@@ -141,42 +140,39 @@ impl<D, P: Point> Octree<D, P> {
         depth: u8,
     ) -> Option<BranchKey> {
         match self.get_branch(branch) {
+            Branch::Leaf {
+                point: child_point, ..
+            } => {
+                if &point == child_point {
+                    Some(self.add_branch(Branch::Leaf {
+                        point,
+                        data,
+                        child: Some(branch),
+                    }))
+                } else {
+                    let shared = (&point ^ child_point).leading_zeros();
+                    let child_point = child_point.clone();
+                    let new = self.add_branch(Branch::new_data(point.clone(), data));
+                    Some(self.add_new_split(new, branch, point, &child_point, shared))
+                }
+            }
             Branch::Skip {
                 point: child_point,
                 point_depth,
                 child: branch_child,
-                ..
             } => {
                 let shared = (&point ^ child_point).leading_zeros();
                 if shared >= *point_depth {
                     // They share all their data (up to point depth)
-                    if let Some(branch_key) = branch_child {
-                        if let Some(new) =
-                            self.add_to_branch(*branch_key, data, point, *point_depth)
-                        {
-                            self.set_skip_child(branch, new);
-                        }
-                    } else {
-                        let new = self.add_branch(Branch::new_data(point, data));
-                        self.add_duplicate(branch, new);
+                    if let Some(new) = self.add_to_branch(*branch_child, data, point, *point_depth)
+                    {
+                        self.set_skip_child(branch, new);
                     }
                     None
                 } else {
                     let child_point = child_point.clone();
                     let new = self.add_branch(Branch::new_data(point.clone(), data));
-                    let split = self.add_new_split(new, branch, &point, &child_point, shared);
-
-                    if shared > 0 {
-                        let new = self.add_branch(Branch::Skip {
-                            point,
-                            point_depth: shared,
-                            data: None,
-                            child: Some(split),
-                        });
-                        Some(new)
-                    } else {
-                        Some(split)
-                    }
+                    Some(self.add_new_split(new, branch, point, &child_point, shared))
                 }
             }
             Branch::Split(children) => {
@@ -199,7 +195,7 @@ impl<D, P: Point> Octree<D, P> {
         &mut self,
         child1: BranchKey,
         child2: BranchKey,
-        point1: &PointData<P>,
+        point1: PointData<P>,
         point2: &PointData<P>,
         depth: u8,
     ) -> BranchKey {
@@ -208,15 +204,18 @@ impl<D, P: Point> Octree<D, P> {
         let mut children = [None, None, None, None, None, None, None, None];
         children[dir1] = Some(child1);
         children[dir2] = Some(child2);
-        self.add_branch(Branch::Split(children))
-    }
+        let split = self.add_branch(Branch::Split(children));
 
-    /// Add a duplicate point split to a chain
-    fn add_duplicate(&mut self, dupe_branch: BranchKey, new_branch: BranchKey) {
-        let Branch::Skip { child, .. } = self.get_branch_mut(dupe_branch) else {
-            unreachable!()
-        };
-        *child = Some(new_branch);
+        if depth > 0 {
+            let skip = self.add_branch(Branch::Skip {
+                point: point1,
+                point_depth: depth,
+                child: split,
+            });
+            skip
+        } else {
+            split
+        }
     }
 
     /// Sets the child of the given branch to 'new' if it is a skip branch (N.B. must be passed a skip branch)
@@ -224,7 +223,7 @@ impl<D, P: Point> Octree<D, P> {
         let Branch::Skip { child, .. } = self.get_branch_mut(branch) else {
             unreachable!()
         };
-        *child = Some(new);
+        *child = new;
     }
 
     /// Sets a child of the given branch to 'new' if it is a split branch (N.B. must be passed a split branch)
@@ -236,6 +235,7 @@ impl<D, P: Point> Octree<D, P> {
     }
 }
 
+// Manual impl to add the P::Data: Debug bound
 impl<D, P> Debug for Branch<D, P>
 where
     D: Debug,
@@ -248,12 +248,16 @@ where
             Branch::Skip {
                 point,
                 point_depth,
-                data,
                 child,
             } => f
                 .debug_struct("Branch::Skip")
                 .field("point", point)
                 .field("point_depth", point_depth)
+                .field("child", child)
+                .finish(),
+            Branch::Leaf { point, data, child } => f
+                .debug_struct("Branch::Leaf")
+                .field("point", point)
                 .field("data", data)
                 .field("child", child)
                 .finish(),
