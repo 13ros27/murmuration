@@ -14,12 +14,12 @@ criterion_group!(
 criterion_main!(all);
 
 fn add_many(c: &mut Criterion) {
-    let mut tree = Octree::new();
     let uniform = Uniform::new_inclusive(0, u32::MAX);
     let mut rng = rand::thread_rng();
 
     c.bench_function("add 100_000", |b| {
         b.iter(|| {
+            let mut tree = Octree::new();
             for i in 0..100_000 {
                 tree.add(
                     UVec3::new(
@@ -51,22 +51,25 @@ fn get_many(c: &mut Criterion) {
 
     c.bench_function("get_single", |b| {
         b.iter(|| {
-            black_box(tree.get_single(UVec3::new(
-                uniform.sample(&mut rng),
-                uniform.sample(&mut rng),
-                uniform.sample(&mut rng),
-            )));
+            black_box(
+                tree.get(UVec3::new(
+                    uniform.sample(&mut rng),
+                    uniform.sample(&mut rng),
+                    uniform.sample(&mut rng),
+                ))
+                .next(),
+            );
         })
     });
 }
 
 fn add_many_spatialtree(c: &mut Criterion) {
-    let mut tree = spatialtree::OctTree::new();
     let uniform = Uniform::new_inclusive(0, u32::MAX);
     let mut rng = rand::thread_rng();
 
     c.bench_function("spatial_tree add 100_000", |b| {
         b.iter(|| {
+            let mut tree = spatialtree::OctTree::new();
             for i in 0..100_000 {
                 tree.insert(
                     spatialtree::CoordVec::new(
