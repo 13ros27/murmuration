@@ -73,42 +73,40 @@ impl<D, P: Point> Octree<D, P> {
 
     pub fn get_single(&self, point: P) -> Option<&D> {
         let point = point.get_point();
-        self.root
-            .and_then(|b| self.get_single_from_branch(b, point, 0))
-    }
+        let Some(mut branch) = self.root else {
+            return None;
+        };
+        let mut depth = 0;
 
-    fn get_single_from_branch(
-        &self,
-        branch: BranchKey,
-        point: PointData<P>,
-        depth: u8,
-    ) -> Option<&D> {
-        match self.get_branch(branch) {
-            Branch::Skip {
-                point: skip_point,
-                point_depth: skip_depth,
-                data,
-                child,
-            } => {
-                let shared = (&point ^ skip_point).leading_zeros();
-                if shared == 32 {
-                    data.as_ref()
-                } else {
-                    if shared < *skip_depth {
-                        None
-                    } else if let Some(child) = child {
-                        self.get_single_from_branch(*child, point, *skip_depth)
+        loop {
+            match self.get_branch(branch) {
+                Branch::Skip {
+                    point: skip_point,
+                    point_depth: skip_depth,
+                    data,
+                    child,
+                } => {
+                    let shared = (&point ^ skip_point).leading_zeros();
+                    if shared == 32 {
+                        return data.as_ref();
                     } else {
-                        None
+                        match child {
+                            Some(child) if shared >= *skip_depth => {
+                                branch = *child;
+                                depth = *skip_depth;
+                            }
+                            _ => return None,
+                        }
                     }
                 }
-            }
-            Branch::Split(children) => {
-                let ind = point.nth(depth) as usize;
-                if let Some(child) = children[ind] {
-                    self.get_single_from_branch(child, point, depth + 1)
-                } else {
-                    None
+                Branch::Split(children) => {
+                    let ind = point.nth(depth) as usize;
+                    if let Some(child) = children[ind] {
+                        branch = child;
+                        depth += 1;
+                    } else {
+                        return None;
+                    }
                 }
             }
         }
