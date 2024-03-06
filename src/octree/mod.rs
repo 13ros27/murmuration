@@ -76,6 +76,53 @@ impl<D, P: Point> Octree<D, P> {
     }
 
     pub fn get_single(&self, point: P) -> Option<&D> {
+        let leaf = self.get_leaf(point);
+        if let Some(key) = leaf {
+            if let Branch::Leaf { data, .. } = self.get_branch(key) {
+                return Some(data);
+            }
+        }
+        None
+    }
+
+    pub fn get(&self, point: P) -> impl Iterator<Item = &D> {
+        let leaf = self.get_leaf(point);
+        GetIter { octree: self, leaf }
+    }
+
+    pub fn add(&mut self, point: P, data: D) {
+        let point = point.get_point();
+        if let Some(child_key) = self.root {
+            if let Some(branch) = self.add_to_branch(child_key, data, point, 0) {
+                self.root = Some(branch);
+            }
+        } else {
+            let branch = self.add_branch(Branch::new_data(point, data));
+            self.root = Some(branch);
+        }
+    }
+}
+
+struct GetIter<'a, D, P: Point> {
+    octree: &'a Octree<D, P>,
+    leaf: Option<BranchKey>,
+}
+
+impl<'a, D, P: Point> Iterator for GetIter<'a, D, P> {
+    type Item = &'a D;
+    fn next(&mut self) -> Option<&'a D> {
+        if let Some(key) = self.leaf {
+            if let Branch::Leaf { data, child, .. } = self.octree.get_branch(key) {
+                self.leaf = *child;
+                return Some(data);
+            }
+        }
+        None
+    }
+}
+
+impl<D, P: Point> Octree<D, P> {
+    fn get_leaf(&self, point: P) -> Option<BranchKey> {
         let point = point.get_point();
         let Some(mut branch) = self.root else {
             return None;
@@ -85,11 +132,9 @@ impl<D, P: Point> Octree<D, P> {
         loop {
             match self.get_branch(branch) {
                 Branch::Leaf {
-                    point: skip_point,
-                    data,
-                    ..
+                    point: skip_point, ..
                 } => {
-                    return (&point == skip_point).then_some(data);
+                    return (&point == skip_point).then_some(branch);
                 }
                 Branch::Skip {
                     point: skip_point,
@@ -117,20 +162,6 @@ impl<D, P: Point> Octree<D, P> {
         }
     }
 
-    pub fn add(&mut self, point: P, data: D) {
-        let point = point.get_point();
-        if let Some(child_key) = self.root {
-            if let Some(branch) = self.add_to_branch(child_key, data, point, 0) {
-                self.root = Some(branch);
-            }
-        } else {
-            let branch = self.add_branch(Branch::new_data(point, data));
-            self.root = Some(branch);
-        }
-    }
-}
-
-impl<D, P: Point> Octree<D, P> {
     // NB: The returned Option<BranchKey> is to change the branch above in the recursive chain
     fn add_to_branch(
         &mut self,

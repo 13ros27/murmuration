@@ -25,5 +25,10 @@ fn main() {
     tree.add(UVec3::new(0b10, 0, 0), NonZeroU64::new(5).unwrap());
     tree.add(UVec3::new(0b11, 0, 0), NonZeroU64::new(6).unwrap());
     tree.add(UVec3::new(0b10, 0b10, 0), NonZeroU64::new(7).unwrap());
-    println!("{:?}\n{:?}", tree, tree.get_single(UVec3::new(0b10, 0, 0)));
+    tree.add(UVec3::new(0b10, 0b10, 0), NonZeroU64::new(77).unwrap());
+    println!(
+        "{:?}\n{:?}",
+        tree,
+        tree.get(UVec3::new(0b10, 0b10, 0)).collect::<Vec<_>>()
+    );
 }
