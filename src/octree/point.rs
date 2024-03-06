@@ -1,65 +1,67 @@
+use bytemuck::Pod;
 use glam::{U64Vec3, UVec3};
-use std::ops::BitXor;
-
-use sealed::Unsigned;
+use std::fmt::Debug;
+use std::hash::Hash;
+use std::ops::{BitAnd, BitOr, BitXor, Shl, Shr};
 
 mod sealed {
-    use bytemuck::Pod;
-    use std::{
-        fmt::Debug,
-        hash::Hash,
-        ops::{BitAnd, BitOr, BitXor, Shl, Shr},
-    };
+    pub trait Sealed {}
+    impl Sealed for u8 {}
+    impl Sealed for u16 {}
+    impl Sealed for u32 {}
+    impl Sealed for u64 {}
+    impl Sealed for u128 {}
+}
 
-    pub trait Unsigned:
-        BitAnd<Self, Output = Self>
-        + BitOr<Output = Self>
-        + BitXor<Output = Self>
-        + Shl<u8, Output = Self>
-        + Shr<u8, Output = Self>
-        + From<u8>
-        + TryInto<u8>
-        + Copy
-        + Debug
-        + Eq
-        + Ord
-        + Hash
-        + Pod
-        + Send
-        + Sync
-    {
-        fn leading_zeros(self) -> u8;
-    }
+pub trait Unsigned:
+    sealed::Sealed
+    + BitAnd<Self, Output = Self>
+    + BitOr<Output = Self>
+    + BitXor<Output = Self>
+    + Shl<u8, Output = Self>
+    + Shr<u8, Output = Self>
+    + From<u8>
+    + TryInto<u8>
+    + Copy
+    + Debug
+    + Eq
+    + Ord
+    + Hash
+    + Pod
+    + Send
+    + Sync
+{
+    fn leading_zeros(self) -> u8;
+}
 
-    impl Unsigned for u8 {
-        fn leading_zeros(self) -> u8 {
-            self.leading_zeros() as u8
-        }
+impl Unsigned for u8 {
+    fn leading_zeros(self) -> u8 {
+        self.leading_zeros() as u8
     }
-    impl Unsigned for u16 {
-        fn leading_zeros(self) -> u8 {
-            self.leading_zeros() as u8
-        }
+}
+impl Unsigned for u16 {
+    fn leading_zeros(self) -> u8 {
+        self.leading_zeros() as u8
     }
-    impl Unsigned for u32 {
-        fn leading_zeros(self) -> u8 {
-            self.leading_zeros() as u8
-        }
+}
+impl Unsigned for u32 {
+    fn leading_zeros(self) -> u8 {
+        self.leading_zeros() as u8
     }
-    impl Unsigned for u64 {
-        fn leading_zeros(self) -> u8 {
-            self.leading_zeros() as u8
-        }
+}
+impl Unsigned for u64 {
+    fn leading_zeros(self) -> u8 {
+        self.leading_zeros() as u8
     }
-    impl Unsigned for u128 {
-        fn leading_zeros(self) -> u8 {
-            self.leading_zeros() as u8
-        }
+}
+impl Unsigned for u128 {
+    fn leading_zeros(self) -> u8 {
+        self.leading_zeros() as u8
     }
 }
 
 pub trait OrderedBinary: Clone + PartialEq {
-    type Ordered: sealed::Unsigned;
+    type Ordered: Unsigned;
     fn to_ordered(self) -> Self::Ordered;
 }
 
@@ -91,11 +93,13 @@ impl<P: Point> PointData<P> {
         Self(data)
     }
 
+    pub(crate) fn cross_or(&self) -> <P::Data as OrderedBinary>::Ordered {
+        self.0[0] | self.0[1] | self.0[2]
+    }
+
     /// Returns the smallest number of leading zeros from all of its contained numbers
     pub(crate) fn leading_zeros(&self) -> u8 {
-        let min = self.0.iter().map(|b| b.leading_zeros()).min();
-        // SAFETY: The length of self.0 must be 3 so it must always have a minimum
-        unsafe { min.unwrap_unchecked() }
+        self.cross_or().leading_zeros()
     }
 
     /// Get the 3 values at n as a binary number (essentially a binary cross-section)

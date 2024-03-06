@@ -1,8 +1,7 @@
 use nonmax::NonMaxU32;
+use slab::Slab;
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
-
-use slab::Slab;
 
 use point::{Point, PointData};
 
@@ -49,12 +48,14 @@ impl<D, P: Point> Default for Octree<D, P> {
 impl<D, P: Point> Octree<D, P> {
     fn get_branch(&self, branch: BranchKey) -> &Branch<D, P> {
         let key: u32 = branch.0.into();
-        self.branches.get(key as usize).unwrap()
+        // SAFETY: It shouldn't be possible for the hierarchy to be incorrect
+        unsafe { self.branches.get_unchecked(key as usize) }
     }
 
     fn get_branch_mut(&mut self, branch: BranchKey) -> &mut Branch<D, P> {
         let key: u32 = branch.0.into();
-        self.branches.get_mut(key as usize).unwrap()
+        // SAFETY: It shouldn't be possible for the hierarchy to be incorrect
+        unsafe { self.branches.get_unchecked_mut(key as usize) }
     }
 
     fn add_branch(&mut self, branch: Branch<D, P>) -> BranchKey {
