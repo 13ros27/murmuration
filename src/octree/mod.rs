@@ -88,7 +88,7 @@ impl<D, P: Point> Octree<D, P> {
                     child,
                 } => {
                     let shared = (&point ^ skip_point).leading_zeros();
-                    if shared == 32 && skip_depth == 32 {
+                    if shared == 32 && *skip_depth == 32 {
                         return data.as_ref();
                     } else {
                         match child {
