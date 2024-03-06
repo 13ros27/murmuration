@@ -1,7 +1,6 @@
 use glam::{U64Vec3, UVec3};
 use std::ops::BitXor;
 
-use crate::const_iter::{ConstArrayIter, ConstCollect};
 use sealed::Unsigned;
 
 mod sealed {
@@ -79,27 +78,26 @@ impl OrderedBinary for u64 {
 }
 
 #[derive(Clone, Debug, Eq, PartialOrd, Ord)]
-pub struct GenVec<P: Point, const N: usize = 3>([<P::Data as OrderedBinary>::Ordered; N]);
+pub struct PointData<P: Point>([<P::Data as OrderedBinary>::Ordered; 3]);
 
-impl<P: Point, const N: usize> PartialEq for GenVec<P, N> {
+impl<P: Point> PartialEq for PointData<P> {
     fn eq(&self, other: &Self) -> bool {
         self.0 == other.0
     }
 }
 
-impl<P: Point, const N: usize> GenVec<P, N> {
-    pub fn new(data: [<P::Data as OrderedBinary>::Ordered; N]) -> Self {
+impl<P: Point> PointData<P> {
+    pub fn new(data: [<P::Data as OrderedBinary>::Ordered; 3]) -> Self {
         Self(data)
     }
 
     /// Returns the smallest number of leading zeros from all of its contained numbers
     pub(crate) fn leading_zeros(&self) -> u8 {
-        // TODO: If I decide to use typenum I could enforce N > 0 so use unwrap_unchecked
-        self.0.iter().map(|b| b.leading_zeros()).min().unwrap_or(0)
+        let min = self.0.iter().map(|b| b.leading_zeros()).min();
+        // SAFETY: The length of self.0 must be 3 so it must always have a minimum
+        unsafe { min.unwrap_unchecked() }
     }
-}
 
-impl<P: Point> GenVec<P, 3> {
     /// Get the 3 values at n as a binary number (essentially a binary cross-section)
     pub(crate) fn nth(&self, n: u8) -> u8 {
         let shift = P::MAX_DEPTH - 1 - n;
@@ -111,36 +109,34 @@ impl<P: Point> GenVec<P, 3> {
     }
 }
 
-impl<P: Point, const N: usize> BitXor for &GenVec<P, N> {
-    type Output = GenVec<P, N>;
-    fn bitxor(self, rhs: Self) -> Self::Output {
-        GenVec(
-            self.0
-                .const_iter()
-                .zip(rhs.0.const_iter())
-                .map(|(a, b)| *a ^ *b)
-                .const_collect(),
-        )
+impl<P: Point> BitXor for &PointData<P> {
+    type Output = PointData<P>;
+    fn bitxor(self, rhs: Self) -> PointData<P> {
+        PointData([
+            self.0[0] ^ rhs.0[0],
+            self.0[1] ^ rhs.0[1],
+            self.0[2] ^ rhs.0[2],
+        ])
     }
 }
 
 pub trait Point: Clone + Sized {
     type Data: OrderedBinary;
-    fn get_point(&self) -> GenVec<Self>;
+    fn get_point(&self) -> PointData<Self>;
 
     const MAX_DEPTH: u8 = (std::mem::size_of::<Self::Data>() * 8) as u8;
 }
 
 impl Point for UVec3 {
     type Data = u32;
-    fn get_point(&self) -> GenVec<Self> {
-        GenVec([self.x, self.y, self.z])
+    fn get_point(&self) -> PointData<Self> {
+        PointData([self.x, self.y, self.z])
     }
 }
 
 impl Point for U64Vec3 {
     type Data = u64;
-    fn get_point(&self) -> GenVec<Self> {
-        GenVec([self.x, self.y, self.z])
+    fn get_point(&self) -> PointData<Self> {
+        PointData([self.x, self.y, self.z])
     }
 }

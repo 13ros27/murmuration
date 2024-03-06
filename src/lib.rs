@@ -1,4 +1,3 @@
-mod const_iter;
 pub mod octree;
 
 use bevy_app::prelude::*;

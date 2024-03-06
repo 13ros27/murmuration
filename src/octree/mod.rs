@@ -4,7 +4,7 @@ use std::fmt::{Debug, Formatter};
 
 use slab::Slab;
 
-use point::{GenVec, Point};
+use point::{Point, PointData};
 
 pub mod point;
 
@@ -19,7 +19,7 @@ struct BranchKey(NonMaxU32);
 enum Branch<D, P: Point> {
     Split([Option<BranchKey>; 8]),
     Skip {
-        point: GenVec<P>,
+        point: PointData<P>,
         point_depth: u8,
         data: Option<D>,
         child: Option<BranchKey>,
@@ -27,7 +27,7 @@ enum Branch<D, P: Point> {
 }
 
 impl<D, P: Point> Branch<D, P> {
-    fn new_data(point: GenVec<P>, data: D) -> Self {
+    fn new_data(point: PointData<P>, data: D) -> Self {
         Branch::Skip {
             point,
             point_depth: P::MAX_DEPTH,
@@ -77,7 +77,12 @@ impl<D, P: Point> Octree<D, P> {
             .and_then(|b| self.get_single_from_branch(b, point, 0))
     }
 
-    fn get_single_from_branch(&self, branch: BranchKey, point: GenVec<P>, depth: u8) -> Option<&D> {
+    fn get_single_from_branch(
+        &self,
+        branch: BranchKey,
+        point: PointData<P>,
+        depth: u8,
+    ) -> Option<&D> {
         match self.get_branch(branch) {
             Branch::Skip {
                 point: skip_point,
@@ -85,10 +90,10 @@ impl<D, P: Point> Octree<D, P> {
                 data,
                 child,
             } => {
-                if point == *skip_point && data.is_some() {
+                let shared = (&point ^ skip_point).leading_zeros();
+                if shared == 32 {
                     data.as_ref()
                 } else {
-                    let shared = (&point ^ skip_point).leading_zeros();
                     if shared < *skip_depth {
                         None
                     } else if let Some(child) = child {
@@ -133,7 +138,7 @@ impl<D, P: Point> Octree<D, P> {
         &mut self,
         branch: BranchKey,
         data: D,
-        point: GenVec<P>,
+        point: PointData<P>,
         depth: u8,
     ) -> Option<BranchKey> {
         match self.get_branch(branch) {
@@ -195,8 +200,8 @@ impl<D, P: Point> Octree<D, P> {
         &mut self,
         child1: BranchKey,
         child2: BranchKey,
-        point1: &GenVec<P>,
-        point2: &GenVec<P>,
+        point1: &PointData<P>,
+        point2: &PointData<P>,
         depth: u8,
     ) -> BranchKey {
         let dir1 = point1.nth(depth) as usize;
