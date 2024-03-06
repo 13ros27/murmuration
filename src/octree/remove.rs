@@ -7,7 +7,7 @@ use super::{
 };
 
 impl<D: PartialEq, P: Point> Octree<D, P> {
-    pub fn remove(&mut self, point: P, data: D) -> bool {
+    pub fn remove(&mut self, point: P, data: &D) -> bool {
         let point = point.get_point();
         if let Some((mut leaf, mut parents)) = self.get_leaf_parents(point) {
             let child = loop {
@@ -20,7 +20,7 @@ impl<D: PartialEq, P: Point> Octree<D, P> {
                     unreachable!()
                 };
 
-                if &data == leaf_data {
+                if data == leaf_data {
                     break child;
                 } else if let Some(child) = child {
                     parents.push_front(ParentBranch {

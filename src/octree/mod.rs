@@ -82,6 +82,23 @@ impl<D, P: Point> Octree<D, P> {
     pub fn new() -> Self {
         Self::default()
     }
+
+    pub fn len(&self) -> usize {
+        self.branches.len()
+    }
+}
+
+impl<D: PartialEq, P: Point> Octree<D, P> {
+    pub fn move_data(&mut self, old_point: P, new_point: P, data: D) -> bool {
+        // TODO: Particularly for small moves we should be faster (could even just check if the
+        //  leaf has to move by looking at its parent)
+        if self.remove(old_point, &data) {
+            self.add(new_point, data);
+            true
+        } else {
+            false
+        }
+    }
 }
 
 // Manual impl to add the P::Data: Debug bound
