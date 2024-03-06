@@ -16,7 +16,7 @@ pub struct Octree<D, P: Point> {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-struct BranchKey(NonMaxU32);
+pub(crate) struct BranchKey(NonMaxU32);
 
 enum Branch<D, P: Point> {
     Split {
@@ -90,14 +90,50 @@ impl<D, P: Point> Octree<D, P> {
 
 impl<D: PartialEq, P: Point> Octree<D, P> {
     pub fn move_data(&mut self, old_point: P, new_point: P, data: D) -> bool {
-        // TODO: Particularly for small moves we should be faster (could even just check if the
-        //  leaf has to move by looking at its parent)
-        if self.remove(old_point, &data) {
-            self.add(new_point, data);
-            true
-        } else {
-            false
+        if let Some((leaf, parents)) = self.get_leaf_parents(old_point.get_point()) {
+            if let Branch::Leaf {
+                child,
+                data: leaf_data,
+                ..
+            } = self.get_branch(leaf)
+            {
+                // Optimise trivial moves
+                if &data == leaf_data && child.is_none() {
+                    let trivial = if parents.is_empty() {
+                        true
+                    } else {
+                        let mut depth = 0;
+                        for parent in &parents {
+                            match self.get_branch(**parent) {
+                                Branch::Split { .. } => depth += 1,
+                                Branch::Skip { point_depth, .. } => {
+                                    depth += point_depth;
+                                    break;
+                                }
+                                Branch::Leaf { .. } => unreachable!(),
+                            }
+                        }
+                        let shared =
+                            (&old_point.get_point() ^ &new_point.get_point()).leading_zeros();
+                        shared >= depth
+                    };
+
+                    if trivial {
+                        let Branch::Leaf { point, .. } = self.get_branch_mut(leaf) else {
+                            unreachable!()
+                        };
+                        *point = new_point.get_point();
+                        return true;
+                    }
+                }
+            }
+
+            if self.remove_from_parent_chain(leaf, parents, &data) {
+                self.add(new_point, data);
+                return true;
+            }
         }
+        false
     }
 }
 

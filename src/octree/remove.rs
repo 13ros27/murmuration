@@ -9,93 +9,108 @@ use super::{
 impl<D: PartialEq, P: Point> Octree<D, P> {
     pub fn remove(&mut self, point: P, data: &D) -> bool {
         let point = point.get_point();
-        if let Some((mut leaf, mut parents)) = self.get_leaf_parents(point) {
-            let child = loop {
-                let Branch::Leaf {
-                    data: leaf_data,
-                    child,
-                    ..
-                } = self.get_branch(leaf)
-                else {
-                    unreachable!()
-                };
-
-                if data == leaf_data {
-                    break child;
-                } else if let Some(child) = child {
-                    parents.push_front(ParentBranch {
-                        branch: leaf,
-                        ind: None,
-                    });
-                    leaf = *child;
-                } else {
-                    return false;
-                }
-            };
-
-            if let Some(parent) = parents.front() {
-                if let Some(new_child) = child {
-                    parent.set_child(self, *new_child);
-                } else {
-                    let new_child = match self.get_branch_mut(**parent) {
-                        Branch::Leaf { child, .. } => {
-                            *child = None;
-                            None
-                        }
-                        Branch::Split { children, occupied } => {
-                            *occupied -= 1;
-                            let ind = parent.ind.unwrap() as usize;
-                            if *occupied > 1 {
-                                children[ind] = None;
-                                None
-                            } else {
-                                Some(
-                                    children
-                                        .iter()
-                                        .enumerate()
-                                        .find_map(|(i, b)| match b {
-                                            Some(b) if i != ind => Some(*b),
-                                            _ => None,
-                                        })
-                                        .unwrap(),
-                                )
-                            }
-                        }
-                        Branch::Skip { .. } => unreachable!(),
-                    };
-
-                    // If there is a new_child we want to re-parent it onto the item above
-                    if let Some(child) = new_child {
-                        self.remove_branch(**parent);
-                        let mut reparented = false;
-                        for parent in parents.iter().skip(1) {
-                            if let Branch::Split { children, .. } = self.get_branch_mut(**parent) {
-                                children[parent.ind.unwrap() as usize] = Some(child);
-                                reparented = true;
-                                break;
-                            }
-                            self.remove_branch(**parent);
-                        }
-
-                        if !reparented {
-                            self.root = Some(child);
-                        }
-                    }
-                }
-            } else {
-                self.root = *child;
-            }
-            self.remove_branch(leaf);
-            true
+        if let Some((leaf, parents)) = self.get_leaf_parents(point) {
+            self.remove_from_parent_chain(leaf, parents, data)
         } else {
             false
         }
+    }
+
+    #[inline]
+    pub(crate) fn remove_from_parent_chain(
+        &mut self,
+        leaf: BranchKey,
+        parents: VecDeque<ParentBranch>,
+        data: &D,
+    ) -> bool {
+        let mut leaf = leaf;
+        let mut parents = parents;
+        let child = loop {
+            let Branch::Leaf {
+                data: leaf_data,
+                child,
+                ..
+            } = self.get_branch(leaf)
+            else {
+                unreachable!()
+            };
+
+            if data == leaf_data {
+                break child;
+            } else if let Some(child) = child {
+                parents.push_front(ParentBranch {
+                    branch: leaf,
+                    ind: None,
+                });
+                leaf = *child;
+            } else {
+                return false;
+            }
+        };
+
+        if let Some(parent) = parents.front() {
+            if let Some(new_child) = child {
+                parent.set_child(self, *new_child);
+            } else {
+                let new_child = match self.get_branch_mut(**parent) {
+                    Branch::Leaf { child, .. } => {
+                        *child = None;
+                        None
+                    }
+                    Branch::Split { children, occupied } => {
+                        *occupied -= 1;
+                        let ind = parent.ind.unwrap() as usize;
+                        if *occupied > 1 {
+                            children[ind] = None;
+                            None
+                        } else {
+                            Some(
+                                children
+                                    .iter()
+                                    .enumerate()
+                                    .find_map(|(i, b)| match b {
+                                        Some(b) if i != ind => Some(*b),
+                                        _ => None,
+                                    })
+                                    .unwrap(),
+                            )
+                        }
+                    }
+                    Branch::Skip { .. } => unreachable!(),
+                };
+
+                // If there is a new_child we want to re-parent it onto the item above
+                if let Some(child) = new_child {
+                    self.remove_branch(**parent);
+                    let mut reparented = false;
+                    for parent in parents.iter().skip(1) {
+                        if let Branch::Split { children, .. } = self.get_branch_mut(**parent) {
+                            children[parent.ind.unwrap() as usize] = Some(child);
+                            reparented = true;
+                            break;
+                        }
+                        self.remove_branch(**parent);
+                    }
+
+                    if !reparented {
+                        self.root = Some(child);
+                    }
+                }
+            }
+        } else {
+            self.root = *child;
+        }
+        self.remove_branch(leaf);
+        true
     }
 }
 
 impl<D, P: Point> Octree<D, P> {
     /// Returns the leaf and chain of branches leading to it
-    fn get_leaf_parents(&self, point: PointData<P>) -> Option<(BranchKey, VecDeque<ParentBranch>)> {
+    pub(crate) fn get_leaf_parents(
+        &self,
+        point: PointData<P>,
+    ) -> Option<(BranchKey, VecDeque<ParentBranch>)> {
         let Some(mut branch) = self.root else {
             return None;
         };
@@ -141,7 +156,8 @@ impl<D, P: Point> Octree<D, P> {
     }
 }
 
-struct ParentBranch {
+#[derive(Debug)]
+pub(crate) struct ParentBranch {
     branch: BranchKey,
     ind: Option<u8>,
 }
