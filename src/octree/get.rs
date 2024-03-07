@@ -1,5 +1,6 @@
 use super::{point::Point, Branch, BranchKey, Octree};
 use crate::octree::point::PointData;
+use std::iter::FusedIterator;
 
 struct GetIter<'a, D, P: Point> {
     octree: &'a Octree<D, P>,
@@ -19,6 +20,7 @@ impl<'a, D, P: Point> Iterator for GetIter<'a, D, P> {
     }
 }
 
+impl<D, P: Point> FusedIterator for GetIter<'_, D, P> {}
 impl<D, P: Point> Octree<D, P> {
     pub fn get(&self, point: P) -> impl Iterator<Item = &D> {
         let leaf = self.get_leaf(point.get_point());
