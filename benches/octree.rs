@@ -11,6 +11,7 @@ criterion_group!(
     add_many_spatialtree,
     get,
     get_spatialtree,
+    within_many,
     remove_many,
     remove_many_spatialtree,
 );
@@ -85,7 +86,54 @@ fn remove_many(c: &mut Criterion) {
                 tree.remove(*item, &NonZeroU64::new(1).unwrap());
             });
         });
-        assert_eq!(tree.len(), 0)
+    });
+}
+
+fn within_many(c: &mut Criterion) {
+    let mut tree = Octree::new();
+    // Has to be something like 30000 otherwise it is too easy to overflow
+    let uniform = Uniform::new_inclusive(0, 30000);
+    let mut rng = rand::thread_rng();
+    for i in 0..100_000 {
+        tree.add(
+            UVec3::new(
+                uniform.sample(&mut rng),
+                uniform.sample(&mut rng),
+                uniform.sample(&mut rng),
+            ),
+            NonZeroU64::new(i + 1).unwrap(),
+        )
+    }
+
+    c.bench_function("within_1000", |b| {
+        b.iter(|| {
+            black_box(
+                tree.within(
+                    UVec3::new(
+                        uniform.sample(&mut rng),
+                        uniform.sample(&mut rng),
+                        uniform.sample(&mut rng),
+                    ),
+                    1000,
+                )
+                .count(),
+            );
+        })
+    });
+    c.bench_function("within_10000", |b| {
+        b.iter(|| {
+            black_box(
+                tree.within(
+                    UVec3::new(
+                        uniform.sample(&mut rng),
+                        uniform.sample(&mut rng),
+                        uniform.sample(&mut rng),
+                    ),
+                    10000,
+                )
+                .count(),
+            );
+        })
     });
 }
 
@@ -149,7 +197,7 @@ fn remove_many_spatialtree(c: &mut Criterion) {
     let uniform = Uniform::new_inclusive(0, u32::MAX);
     let mut rng = rand::thread_rng();
 
-    c.bench_function("remove_many", |b| {
+    c.bench_function("spatialtree remove_many", |b| {
         let mut tree = spatialtree::OctTree::new();
         let mut items = Vec::new();
         for _ in 0..100_000 {
