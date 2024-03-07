@@ -9,7 +9,7 @@ use super::{
 impl<D: PartialEq, P: Point> Octree<D, P> {
     pub fn remove(&mut self, point: P, data: &D) -> bool {
         let point = point.get_point();
-        if let Some((leaf, parents)) = self.get_leaf_parents(point) {
+        if let Ok((leaf, parents)) = self.get_leaf_parents(point) {
             self.remove_from_parent_chain(leaf, parents, data)
         } else {
             false
@@ -110,9 +110,9 @@ impl<D, P: Point> Octree<D, P> {
     pub(crate) fn get_leaf_parents(
         &self,
         point: PointData<P>,
-    ) -> Option<(BranchKey, VecDeque<ParentBranch>)> {
+    ) -> Result<(BranchKey, VecDeque<ParentBranch>), VecDeque<ParentBranch>> {
         let Some(mut branch) = self.root else {
-            return None;
+            return Err(VecDeque::new());
         };
         let mut parents = VecDeque::new();
         let mut depth = 0;
@@ -122,7 +122,9 @@ impl<D, P: Point> Octree<D, P> {
                 Branch::Leaf {
                     point: skip_point, ..
                 } => {
-                    return (&point == skip_point).then_some((branch, parents));
+                    return (&point == skip_point)
+                        .then_some((branch, parents.clone()))
+                        .ok_or(parents);
                 }
                 Branch::Skip {
                     point: skip_point,
@@ -135,7 +137,7 @@ impl<D, P: Point> Octree<D, P> {
                         branch = *child;
                         depth = *skip_depth;
                     } else {
-                        return None;
+                        return Err(parents);
                     }
                 }
                 Branch::Split { children, .. } => {
@@ -148,7 +150,7 @@ impl<D, P: Point> Octree<D, P> {
                         branch = child;
                         depth += 1;
                     } else {
-                        return None;
+                        return Err(parents);
                     }
                 }
             }
@@ -156,10 +158,10 @@ impl<D, P: Point> Octree<D, P> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct ParentBranch {
-    branch: BranchKey,
-    ind: Option<u8>,
+    pub(crate) branch: BranchKey,
+    pub(crate) ind: Option<u8>,
 }
 
 impl Deref for ParentBranch {

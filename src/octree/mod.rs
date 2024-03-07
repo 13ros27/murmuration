@@ -21,7 +21,7 @@ pub(crate) struct BranchKey(NonMaxU32);
 enum Branch<D, P: Point> {
     Split {
         children: [Option<BranchKey>; 8],
-        occupied: u8, // How many of the children are Some(_).
+        occupied: u8, // How many of the children are Some(_) (used for .remove).
     },
     Skip {
         point: PointData<P>,
@@ -82,15 +82,11 @@ impl<D, P: Point> Octree<D, P> {
     pub fn new() -> Self {
         Self::default()
     }
-
-    pub fn len(&self) -> usize {
-        self.branches.len()
-    }
 }
 
 impl<D: PartialEq, P: Point> Octree<D, P> {
     pub fn move_data(&mut self, old_point: P, new_point: P, data: D) -> bool {
-        if let Some((leaf, parents)) = self.get_leaf_parents(old_point.get_point()) {
+        if let Ok((leaf, parents)) = self.get_leaf_parents(old_point.get_point()) {
             if let Branch::Leaf {
                 child,
                 data: leaf_data,
