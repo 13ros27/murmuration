@@ -38,7 +38,7 @@ impl<D, P: Point> Octree<D, P> {
                     let shared = (&point ^ child_point).leading_zeros();
                     let child_point = child_point.clone();
                     let new = self.add_branch(Branch::new_data(point.clone(), data));
-                    Some(self.add_new_split(new, branch, point, &child_point, shared))
+                    Some(self.add_new_split(new, branch, point, &child_point, shared, depth))
                 }
             }
             Branch::Skip {
@@ -57,7 +57,7 @@ impl<D, P: Point> Octree<D, P> {
                 } else {
                     let child_point = child_point.clone();
                     let new = self.add_branch(Branch::new_data(point.clone(), data));
-                    Some(self.add_new_split(new, branch, point, &child_point, shared))
+                    Some(self.add_new_split(new, branch, point, &child_point, shared, depth))
                 }
             }
             Branch::Split { children, .. } => {
@@ -82,22 +82,24 @@ impl<D, P: Point> Octree<D, P> {
         child2: BranchKey,
         point1: PointData<P>,
         point2: &PointData<P>,
+        shared: u8,
         depth: u8,
     ) -> BranchKey {
-        let dir1 = point1.nth(depth) as usize;
-        let dir2 = point2.nth(depth) as usize;
+        let dir1 = point1.nth(shared) as usize;
+        let dir2 = point2.nth(shared) as usize;
         let mut children = [None, None, None, None, None, None, None, None];
         children[dir1] = Some(child1);
         children[dir2] = Some(child2);
         let split = self.add_branch(Branch::Split {
             children,
             occupied: 2,
+            depth: shared + 1,
         });
 
-        if depth > 0 {
+        if shared > depth {
             self.add_branch(Branch::Skip {
                 point: point1,
-                point_depth: depth,
+                point_depth: shared,
                 child: split,
             })
         } else {
