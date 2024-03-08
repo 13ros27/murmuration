@@ -178,10 +178,12 @@ impl<P: Point> PointData<P> {
             dist = dist
                 + match child.cmp(&centre) {
                     Ordering::Equal => P::Data::ZERO,
-                    Ordering::Greater => {
+                    Ordering::Less => {
                         centre_data.distance_squared(&P::Data::from_ordered(child | increase_mask))
                     }
-                    Ordering::Less => centre_data.distance_squared(&P::Data::from_ordered(child)),
+                    Ordering::Greater => {
+                        centre_data.distance_squared(&P::Data::from_ordered(child))
+                    }
                 };
         }
         dist
