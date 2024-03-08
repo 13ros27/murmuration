@@ -1,5 +1,5 @@
 use bytemuck::Pod;
-use glam::{U64Vec3, UVec3};
+use glam::{IVec3, U64Vec3, UVec3};
 use std::cmp::Ordering;
 use std::fmt::{Binary, Debug};
 use std::hash::Hash;
@@ -79,7 +79,7 @@ pub trait OrderedBinary:
 {
     const ZERO: Self;
     type Ordered: Unsigned;
-    fn to_ordered(self) -> Self::Ordered;
+    fn to_ordered(&self) -> Self::Ordered;
     fn from_ordered(ordered: Self::Ordered) -> Self;
     fn distance_squared(&self, other: &Self) -> Self {
         let dist = if self > other {
@@ -94,8 +94,8 @@ pub trait OrderedBinary:
 impl OrderedBinary for u32 {
     const ZERO: u32 = 0;
     type Ordered = u32;
-    fn to_ordered(self) -> u32 {
-        self
+    fn to_ordered(&self) -> u32 {
+        *self
     }
     fn from_ordered(ordered: u32) -> Self {
         ordered
@@ -105,11 +105,26 @@ impl OrderedBinary for u32 {
 impl OrderedBinary for u64 {
     const ZERO: u64 = 0;
     type Ordered = u64;
-    fn to_ordered(self) -> u64 {
-        self
+    fn to_ordered(&self) -> u64 {
+        *self
     }
     fn from_ordered(ordered: u64) -> Self {
         ordered
+    }
+}
+
+impl OrderedBinary for i32 {
+    const ZERO: i32 = 0;
+    type Ordered = u32;
+    fn to_ordered(&self) -> Self::Ordered {
+        u32::from_ne_bytes(self.to_ne_bytes()) ^ (1_u32 << 31)
+    }
+    fn from_ordered(ordered: u32) -> Self {
+        i32::from_ne_bytes((ordered ^ (1_u32 << 31)).to_ne_bytes())
+    }
+    fn distance_squared(&self, other: &Self) -> Self {
+        let dist = self.clone() - other.clone();
+        dist.clone() * dist
     }
 }
 
@@ -149,7 +164,6 @@ impl<P: Point> PointData<P> {
     }
 
     pub(crate) fn distance_squared(&self, other: &Self) -> P::Data {
-        // TODO: Maybe separately handle those that are fine with negatives?
         let (self_x, other_x, self_y, other_y, self_z, other_z) = (
             P::Data::from_ordered(self.0[0]),
             P::Data::from_ordered(other.0[0]),
@@ -228,21 +242,34 @@ impl<P: Point> BitXor for &PointData<P> {
 
 pub trait Point: Clone + Sized {
     type Data: OrderedBinary;
-    fn get_point(&self) -> PointData<Self>;
+    fn to_array(&self) -> [Self::Data; 3];
+    fn get_point(&self) -> PointData<Self> {
+        let arr = self.to_array();
+        PointData([
+            arr[0].to_ordered(),
+            arr[1].to_ordered(),
+            arr[2].to_ordered(),
+        ])
+    }
 
     const MAX_DEPTH: u8 = (std::mem::size_of::<Self::Data>() * 8) as u8;
 }
 
 impl Point for UVec3 {
     type Data = u32;
-    fn get_point(&self) -> PointData<Self> {
-        PointData(self.to_array())
+    fn to_array(&self) -> [u32; 3] {
+        self.to_array()
     }
 }
-
+impl Point for IVec3 {
+    type Data = i32;
+    fn to_array(&self) -> [i32; 3] {
+        self.to_array()
+    }
+}
 impl Point for U64Vec3 {
     type Data = u64;
-    fn get_point(&self) -> PointData<Self> {
-        PointData(self.to_array())
+    fn to_array(&self) -> [u64; 3] {
+        self.to_array()
     }
 }
