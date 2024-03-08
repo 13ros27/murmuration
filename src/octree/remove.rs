@@ -16,7 +16,6 @@ impl<D: PartialEq, P: Point> Octree<D, P> {
         }
     }
 
-    #[inline]
     pub(crate) fn remove_from_parent_chain(
         &mut self,
         leaf: BranchKey,
@@ -52,19 +51,23 @@ impl<D: PartialEq, P: Point> Octree<D, P> {
             if let Some(new_child) = child {
                 parent.set_child(self, *new_child);
             } else {
-                let new_child = match self.get_branch_mut(**parent) {
+                let info = match self.get_branch_mut(**parent) {
                     Branch::Leaf { child, .. } => {
                         *child = None;
                         None
                     }
-                    Branch::Split { children, occupied } => {
+                    Branch::Split {
+                        children,
+                        occupied,
+                        depth,
+                    } => {
                         *occupied -= 1;
                         let ind = parent.ind.unwrap() as usize;
                         if *occupied > 1 {
                             children[ind] = None;
                             None
                         } else {
-                            Some(
+                            Some((
                                 children
                                     .iter()
                                     .enumerate()
@@ -73,19 +76,47 @@ impl<D: PartialEq, P: Point> Octree<D, P> {
                                         _ => None,
                                     })
                                     .unwrap(),
-                            )
+                                *depth,
+                            ))
                         }
                     }
                     Branch::Skip { .. } => unreachable!(),
                 };
 
                 // If there is a new_child we want to re-parent it onto the item above
-                if let Some(child) = new_child {
+                if let Some((child, depth)) = info {
+                    let mut have_split = false;
+                    let mut sub_child = child;
+                    let child_point = loop {
+                        match self.get_branch(sub_child) {
+                            Branch::Leaf { point, .. } => break point,
+                            Branch::Skip { point, .. } => break point,
+                            Branch::Split { children, .. } => {
+                                for child in children {
+                                    if let Some(child) = child {
+                                        sub_child = *child;
+                                        have_split = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    };
+                    let skip_branch = if have_split {
+                        self.add_branch(Branch::Skip {
+                            point: child_point.clone(),
+                            point_depth: depth,
+                            child,
+                        })
+                    } else {
+                        child
+                    };
+
                     self.remove_branch(**parent);
                     let mut reparented = false;
                     for parent in parents.iter().skip(1) {
                         if let Branch::Split { children, .. } = self.get_branch_mut(**parent) {
-                            children[parent.ind.unwrap() as usize] = Some(child);
+                            children[parent.ind.unwrap() as usize] = Some(skip_branch);
                             reparented = true;
                             break;
                         }
@@ -93,7 +124,7 @@ impl<D: PartialEq, P: Point> Octree<D, P> {
                     }
 
                     if !reparented {
-                        self.root = Some(child);
+                        self.root = Some(skip_branch);
                     }
                 }
             }
