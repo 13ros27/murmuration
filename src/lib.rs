@@ -4,7 +4,7 @@ pub mod octree;
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
 use bevy_ecs::query::{QueryData, QueryFilter, ROQueryItem};
-use bevy_ecs::system::{EntityCommand, EntityCommands, SystemParam};
+use bevy_ecs::system::{EntityCommands, SystemParam};
 use bevy_transform::prelude::*;
 
 use crate::octree::{point::Point, Octree};
@@ -15,10 +15,11 @@ pub struct SpatialPlugin<P: Component + Point>;
 impl<P: Component + Point> Plugin for SpatialPlugin<P> {
     fn build(&self, app: &mut App) {
         app.init_resource::<SpatialGrid<P>>();
-        app.world.register_component::<SpatialMove<P>>();
+        app.world.init_component::<SpatialMove<P>>();
         app.world.observer(
             |observer: Observer<OnAdd, P>,
-             (query, mut spatial): (Query<&P>, ResMut<SpatialGrid<P>>)| {
+             query: Query<&P>,
+             mut spatial: ResMut<SpatialGrid<P>>| {
                 let entity = observer.source();
                 let point = query.get(entity).unwrap();
                 spatial.add(entity, point.clone());
@@ -26,20 +27,23 @@ impl<P: Component + Point> Plugin for SpatialPlugin<P> {
         );
         app.world.observer(
             |observer: Observer<OnRemove, P>,
-             (query, mut spatial): (Query<&P>, ResMut<SpatialGrid<P>>)| {
+             query: Query<&P>,
+             mut spatial: ResMut<SpatialGrid<P>>| {
                 let entity = observer.source();
                 let point = query.get(entity).unwrap();
                 spatial.remove(&entity, point.clone());
             },
         );
         app.world.observer(
-            |observer: Observer<SpatialMove<P>, P>,
-             (mut query, mut spatial): (Query<&mut P>, ResMut<SpatialGrid<P>>)| {
+            |observer: Observer<SpatialMove<P>>,
+             mut query: Query<&mut P>,
+             mut spatial: ResMut<SpatialGrid<P>>| {
                 let entity = observer.source();
-                let new_point = observer.data().0.clone();
-                let mut point = query.get_mut(entity).unwrap();
-                spatial.move_entity(entity, point.clone(), new_point.clone());
-                *point = new_point;
+                let SpatialMove(new_point) = observer.data();
+                if let Ok(mut point) = query.get_mut(entity) {
+                    spatial.move_entity(entity, point.clone(), new_point.clone());
+                    *point = new_point.clone();
+                }
             },
         );
     }
@@ -64,6 +68,14 @@ where
     D: QueryData,
     F: QueryFilter,
 {
+    pub fn as_query(&self) -> &Query<'w, 's, D, (F, With<Transform>)> {
+        &self.query
+    }
+
+    pub fn as_query_mut(&mut self) -> &mut Query<'w, 's, D, (F, With<Transform>)> {
+        &mut self.query
+    }
+
     pub fn get(&self, point: &P) -> impl Iterator<Item = ROQueryItem<'_, D>> {
         self.grid.get(point).filter_map(|e| self.query.get(e).ok())
     }
@@ -154,28 +166,15 @@ impl Point for Transform {
 }
 
 pub trait MoveToExt {
-    fn move_to<P: Point + Send + Sync + 'static>(&mut self, new_point: P);
-}
-
-impl MoveToExt for EntityWorldMut<'_> {
-    fn move_to<P: Point + Send + Sync + 'static>(&mut self, new_point: P) {
-        let entity = self.id();
-        self.world_scope(|w| {
-            w.ecs_event(SpatialMove(new_point)).entity(entity).emit();
-        });
-    }
+    fn move_to<P: Component + Point + Send + Sync + 'static>(&mut self, new_point: P);
 }
 
 impl MoveToExt for EntityCommands<'_> {
-    fn move_to<P: Point + Send + Sync + 'static>(&mut self, new_point: P) {
-        self.add(MoveToCommand(new_point));
-    }
-}
-
-struct MoveToCommand<P: Point + Send + Sync + 'static>(P);
-
-impl<P: Point + Send + Sync + 'static> EntityCommand for MoveToCommand<P> {
-    fn apply(self, id: Entity, world: &mut World) {
-        world.entity_mut(id).move_to(self.0);
+    fn move_to<P: Component + Point + Send + Sync + 'static>(&mut self, new_point: P) {
+        let entity = self.id();
+        self.commands()
+            .event(SpatialMove(new_point))
+            .entity(entity)
+            .emit();
     }
 }
