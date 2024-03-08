@@ -16,6 +16,7 @@ nonmax = "0.5.5"
 slab = "0.4.9"
 
 [dev-dependencies]
+bevy = { git = "https://github.com/james-j-obrien/bevy", rev = "84ff2c71accf3735587aa7a7a023395b539c9c71" }
 criterion = "0.5.1"
 rand = "0.8.5"
 spatialtree = "0.1.1"
@@ -24,6 +25,5 @@ spatialtree = "0.1.1"
 name = "octree"
 harness = false
 
-[profile.release]
-debug = true
-strip = false
+[[example]]
+name = "within"
