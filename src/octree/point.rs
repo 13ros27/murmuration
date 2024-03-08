@@ -171,8 +171,12 @@ impl<P: Point> PointData<P> {
 
         let mut dist = P::Data::ZERO;
         for i in 0..=2 {
-            let child = self.0[i] >> (shift + 1) << (shift + 1)
-                | ((ind & (4 >> i)) >> (2 - i) << shift).into();
+            let ind_part: <P::Data as OrderedBinary>::Ordered = (ind & (4 >> i)).into();
+            let child = if shift >= 31 {
+                0.into()
+            } else {
+                self.0[i] >> (shift + 1) << (shift + 1)
+            } | (ind_part >> (2 - i as u8) << shift);
             let centre_data = P::Data::from_ordered(centre.0[i]);
             let centre = centre.0[i] >> shift << shift;
             dist = dist
@@ -192,11 +196,22 @@ impl<P: Point> PointData<P> {
     /// Combine an index from .nth with self at the given depth
     pub(crate) fn combine_ind(&self, ind: u8, depth: u8) -> Self {
         let shift = P::MAX_DEPTH - depth + 1;
-        PointData([
-            self.0[0] >> shift << shift | ((ind & 4) >> 3 << shift).into(),
-            self.0[1] >> shift << shift | ((ind & 2) >> 2 << shift).into(),
-            self.0[2] >> shift << shift | ((ind & 1) >> 1 << shift).into(),
-        ])
+        let ind_4: <P::Data as OrderedBinary>::Ordered = (ind & 4).into();
+        let ind_2: <P::Data as OrderedBinary>::Ordered = (ind & 2).into();
+        let ind_1: <P::Data as OrderedBinary>::Ordered = (ind & 1).into();
+        if shift >= 32 {
+            PointData([
+                ind_4 >> (shift - 3),
+                ind_2 >> (shift - 2),
+                ind_1 >> (shift - 1),
+            ])
+        } else {
+            PointData([
+                self.0[0] >> shift << shift | ind_4 >> 3 << shift,
+                self.0[1] >> shift << shift | ind_2 >> 2 << shift,
+                self.0[2] >> shift << shift | ind_1 >> 1 << shift,
+            ])
+        }
     }
 }
 
