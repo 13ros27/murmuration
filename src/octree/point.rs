@@ -137,6 +137,14 @@ impl<P: Point> PartialEq for PointData<P> {
     }
 }
 
+impl<P: Point> Debug for PointData<P> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_list()
+            .entries(self.0.map(|n| format!("{n:0>0$b}", P::MAX_DEPTH as usize)))
+            .finish()
+    }
+}
+
 impl<P: Point> PointData<P> {
     pub(crate) const ZERO: Self = Self([<P::Data as OrderedBinary>::Ordered::ZERO; 3]);
 
