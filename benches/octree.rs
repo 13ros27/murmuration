@@ -55,7 +55,7 @@ fn get(c: &mut Criterion) {
 
     c.bench_function("get_single", |b| {
         b.iter(|| {
-            black_box(tree.get_single(UVec3::new(
+            black_box(tree.get_single(&UVec3::new(
                 uniform.sample(&mut rng),
                 uniform.sample(&mut rng),
                 uniform.sample(&mut rng),
@@ -110,7 +110,7 @@ fn within_many(c: &mut Criterion) {
         b.iter(|| {
             black_box(
                 tree.within(
-                    UVec3::new(
+                    &UVec3::new(
                         uniform.sample(&mut rng),
                         uniform.sample(&mut rng),
                         uniform.sample(&mut rng),
@@ -125,7 +125,7 @@ fn within_many(c: &mut Criterion) {
         b.iter(|| {
             black_box(
                 tree.within(
-                    UVec3::new(
+                    &UVec3::new(
                         uniform.sample(&mut rng),
                         uniform.sample(&mut rng),
                         uniform.sample(&mut rng),
@@ -138,7 +138,7 @@ fn within_many(c: &mut Criterion) {
     });
 
     let mut tree = Octree::new();
-    let uniform = Uniform::new_inclusive(0.0, 1000_000.0);
+    let uniform = Uniform::new_inclusive(-1000_000.0, 1000_000.0);
     let mut rng = rand::thread_rng();
     for i in 0..100_000 {
         tree.add(
@@ -155,7 +155,7 @@ fn within_many(c: &mut Criterion) {
         b.iter(|| {
             black_box(
                 tree.within(
-                    Vec3::new(
+                    &Vec3::new(
                         uniform.sample(&mut rng),
                         uniform.sample(&mut rng),
                         uniform.sample(&mut rng),
