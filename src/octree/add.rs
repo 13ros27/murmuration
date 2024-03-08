@@ -117,7 +117,10 @@ impl<D, P: Point> Octree<D, P> {
 
     /// Sets a child of the given branch to 'new' if it is a split branch (N.B. must be passed a split branch)
     fn set_split_child(&mut self, branch: BranchKey, ind: usize, new: BranchKey) {
-        let Branch::Split { children, occupied } = self.get_branch_mut(branch) else {
+        let Branch::Split {
+            children, occupied, ..
+        } = self.get_branch_mut(branch)
+        else {
             unreachable!()
         };
         if children[ind].is_none() {

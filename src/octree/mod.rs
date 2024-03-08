@@ -22,6 +22,7 @@ enum Branch<D, P: Point> {
     Split {
         children: [Option<BranchKey>; 8],
         occupied: u8, // How many of the children are Some(_) (used for .remove).
+        depth: u8,    // Equivalent to point_depth + 1 if there is a Skip above them
     },
     Skip {
         point: PointData<P>,
@@ -81,6 +82,10 @@ impl<D, P: Point> Octree<D, P> {
 
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn num_branches(&self) -> usize {
+        self.branches.len()
     }
 }
 
@@ -142,10 +147,15 @@ where
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Branch::Split { children, occupied } => f
+            Branch::Split {
+                children,
+                occupied,
+                depth,
+            } => f
                 .debug_struct("Branch::Split")
                 .field("children", children)
                 .field("occupied", occupied)
+                .field("depth", depth)
                 .finish(),
             Branch::Skip {
                 point,

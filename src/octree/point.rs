@@ -1,6 +1,7 @@
 use bytemuck::Pod;
 use glam::{U64Vec3, UVec3};
-use std::fmt::Debug;
+use std::cmp::Ordering;
+use std::fmt::{Binary, Debug};
 use std::hash::Hash;
 use std::ops::{Add, BitAnd, BitOr, BitXor, Mul, Shl, Shr, Sub};
 
@@ -15,6 +16,7 @@ mod sealed {
 
 pub trait Unsigned:
     sealed::Sealed
+    + Binary
     + BitAnd<Self, Output = Self>
     + BitOr<Output = Self>
     + BitXor<Output = Self>
@@ -31,35 +33,41 @@ pub trait Unsigned:
     + Send
     + Sync
 {
+    const ZERO: Self;
     const MAX: Self;
     fn leading_zeros(self) -> u8;
 }
 
 impl Unsigned for u8 {
+    const ZERO: u8 = 0;
     const MAX: u8 = u8::MAX;
     fn leading_zeros(self) -> u8 {
         self.leading_zeros() as u8
     }
 }
 impl Unsigned for u16 {
+    const ZERO: u16 = 0;
     const MAX: u16 = u16::MAX;
     fn leading_zeros(self) -> u8 {
         self.leading_zeros() as u8
     }
 }
 impl Unsigned for u32 {
+    const ZERO: u32 = 0;
     const MAX: u32 = u32::MAX;
     fn leading_zeros(self) -> u8 {
         self.leading_zeros() as u8
     }
 }
 impl Unsigned for u64 {
+    const ZERO: u64 = 0;
     const MAX: u64 = u64::MAX;
     fn leading_zeros(self) -> u8 {
         self.leading_zeros() as u8
     }
 }
 impl Unsigned for u128 {
+    const ZERO: u128 = 0;
     const MAX: u128 = u128::MAX;
     fn leading_zeros(self) -> u8 {
         self.leading_zeros() as u8
@@ -69,12 +77,22 @@ impl Unsigned for u128 {
 pub trait OrderedBinary:
     Clone + PartialEq + PartialOrd + Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self>
 {
+    const ZERO: Self;
     type Ordered: Unsigned;
     fn to_ordered(self) -> Self::Ordered;
     fn from_ordered(ordered: Self::Ordered) -> Self;
+    fn distance_squared(&self, other: &Self) -> Self {
+        let dist = if self > other {
+            self.clone() - other.clone()
+        } else {
+            other.clone() - self.clone()
+        };
+        dist.clone() * dist
+    }
 }
 
 impl OrderedBinary for u32 {
+    const ZERO: u32 = 0;
     type Ordered = u32;
     fn to_ordered(self) -> u32 {
         self
@@ -85,6 +103,7 @@ impl OrderedBinary for u32 {
 }
 
 impl OrderedBinary for u64 {
+    const ZERO: u64 = 0;
     type Ordered = u64;
     fn to_ordered(self) -> u64 {
         self
@@ -104,6 +123,8 @@ impl<P: Point> PartialEq for PointData<P> {
 }
 
 impl<P: Point> PointData<P> {
+    pub(crate) const ZERO: Self = Self([<P::Data as OrderedBinary>::Ordered::ZERO; 3]);
+
     pub fn new(data: [<P::Data as OrderedBinary>::Ordered; 3]) -> Self {
         Self(data)
     }
@@ -127,27 +148,6 @@ impl<P: Point> PointData<P> {
         unsafe { val.try_into().unwrap_unchecked() }
     }
 
-    pub(crate) fn approximate_closest(&self, centre: &Self, depth: u8) -> Self {
-        let shift = P::MAX_DEPTH - depth;
-        // Sadly zip seems to (at least sometimes) kill performance so manual it is
-        let x = if (centre.0[0] >> shift & 1.into()) == 1.into() {
-            self.0[0] | (<P::Data as OrderedBinary>::Ordered::MAX >> depth)
-        } else {
-            self.0[0] & (<P::Data as OrderedBinary>::Ordered::MAX << (32 - depth))
-        };
-        let y = if (centre.0[1] >> shift & 1.into()) == 1.into() {
-            self.0[1] | (<P::Data as OrderedBinary>::Ordered::MAX >> depth)
-        } else {
-            self.0[1] & (<P::Data as OrderedBinary>::Ordered::MAX << (32 - depth))
-        };
-        let z = if (centre.0[2] >> shift & 1.into()) == 1.into() {
-            self.0[2] | (<P::Data as OrderedBinary>::Ordered::MAX >> depth)
-        } else {
-            self.0[2] & (<P::Data as OrderedBinary>::Ordered::MAX << (32 - depth))
-        };
-        PointData([x, y, z])
-    }
-
     pub(crate) fn distance_squared(&self, other: &Self) -> P::Data {
         // TODO: Maybe separately handle those that are fine with negatives?
         let (self_x, other_x, self_y, other_y, self_z, other_z) = (
@@ -158,22 +158,43 @@ impl<P: Point> PointData<P> {
             P::Data::from_ordered(self.0[2]),
             P::Data::from_ordered(other.0[2]),
         );
-        let dist_x = if self_x > other_x {
-            self_x - other_x
-        } else {
-            other_x - self_x
-        };
-        let dist_y = if self_y > other_y {
-            self_y - other_y
-        } else {
-            other_y - self_y
-        };
-        let dist_z = if self_z > other_z {
-            self_z - other_z
-        } else {
-            other_z - self_z
-        };
-        dist_x.clone() * dist_x + dist_y.clone() * dist_y + dist_z.clone() * dist_z
+        self_x.distance_squared(&other_x)
+            + self_y.distance_squared(&other_y)
+            + self_z.distance_squared(&other_z)
+    }
+
+    /// Returns the squared distance between self and centre (if we go down the ind branch) as a best case at this depth
+    pub(crate) fn closest_distance(&self, ind: u8, centre: &Self, depth: u8) -> P::Data {
+        // We use self from above depth - 1, ind at depth, and then compare with centre
+        let shift = P::MAX_DEPTH - depth;
+        let increase_mask = <P::Data as OrderedBinary>::Ordered::MAX >> depth;
+
+        let mut dist = P::Data::ZERO;
+        for i in 0..=2 {
+            let child = self.0[i] >> (shift + 1) << (shift + 1)
+                | ((ind & (4 >> i)) >> (2 - i) << shift).into();
+            let centre_data = P::Data::from_ordered(centre.0[i]);
+            let centre = centre.0[i] >> shift << shift;
+            dist = dist
+                + match child.cmp(&centre) {
+                    Ordering::Equal => P::Data::ZERO,
+                    Ordering::Greater => {
+                        centre_data.distance_squared(&P::Data::from_ordered(child | increase_mask))
+                    }
+                    Ordering::Less => centre_data.distance_squared(&P::Data::from_ordered(child)),
+                };
+        }
+        dist
+    }
+
+    /// Combine an index from .nth with self at the given depth
+    pub(crate) fn combine_ind(&self, ind: u8, depth: u8) -> Self {
+        let shift = P::MAX_DEPTH - depth + 1;
+        PointData([
+            self.0[0] >> shift << shift | ((ind & 4) >> 3 << shift).into(),
+            self.0[1] >> shift << shift | ((ind & 2) >> 2 << shift).into(),
+            self.0[2] >> shift << shift | ((ind & 1) >> 1 << shift).into(),
+        ])
     }
 }
 

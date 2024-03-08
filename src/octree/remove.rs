@@ -92,12 +92,9 @@ impl<D: PartialEq, P: Point> Octree<D, P> {
                             Branch::Leaf { point, .. } => break point,
                             Branch::Skip { point, .. } => break point,
                             Branch::Split { children, .. } => {
-                                for child in children {
-                                    if let Some(child) = child {
-                                        sub_child = *child;
-                                        have_split = true;
-                                        break;
-                                    }
+                                if let Some(child) = children.iter().flatten().next() {
+                                    sub_child = *child;
+                                    have_split = true;
                                 }
                             }
                         }
