@@ -57,7 +57,7 @@ where
     query: Query<'w, 's, D, (F, With<Transform>)>,
 }
 
-impl<P, D, F> SpatialQuery<'_, '_, P, D, F>
+impl<'w, 's, P, D, F> SpatialQuery<'w, 's, P, D, F>
 where
     P: Point,
     D: QueryData,
@@ -71,6 +71,58 @@ where
         self.grid
             .within(point, distance)
             .filter_map(|e| self.query.get(e).ok())
+    }
+
+    pub fn within_mut<'a>(
+        &'a mut self,
+        point: &P,
+        distance: P::Data,
+    ) -> sealed::SpatialMut<'w, 's, 'a, impl Iterator<Item = Entity> + 'a, D, (F, With<Transform>)>
+    {
+        sealed::SpatialMut {
+            inner: self.grid.within(point, distance),
+            query: &mut self.query,
+        }
+    }
+}
+
+mod sealed {
+    use bevy_ecs::{
+        prelude::*,
+        query::{QueryData, QueryFilter},
+    };
+
+    pub struct SpatialMut<'w, 's, 'a, I, D, F>
+    where
+        I: Iterator<Item = Entity>,
+        D: QueryData,
+        F: QueryFilter,
+    {
+        pub(crate) inner: I,
+        pub(crate) query: &'a mut Query<'w, 's, D, F>,
+    }
+
+    impl<'s, 'a, I, D, F> Iterator for SpatialMut<'_, 's, 'a, I, D, F>
+    where
+        I: Iterator<Item = Entity>,
+        D: QueryData,
+        F: QueryFilter,
+    {
+        type Item = D::Item<'a>;
+        fn next(&mut self) -> Option<Self::Item> {
+            loop {
+                if let Some(entity) = self.inner.next() {
+                    let ptr = self.query as *mut Query<D, F>;
+                    // SAFETY: The iterator in inner should always only return a particular Entity once
+                    let prov_free_query = unsafe { ptr.as_mut().unwrap_unchecked() };
+                    if let Ok(data) = prov_free_query.get_mut(entity) {
+                        break Some(data);
+                    }
+                } else {
+                    break None;
+                }
+            }
+        }
     }
 }
 
@@ -104,11 +156,11 @@ impl<P: Point> SpatialGrid<P> {
     }
 
     pub fn get(&self, point: &P) -> impl Iterator<Item = Entity> + '_ {
-        self.0.get(point).map(|e| *e)
+        self.0.get(point).copied()
     }
 
     pub fn within(&self, point: &P, distance: P::Data) -> impl Iterator<Item = Entity> + '_ {
-        self.0.within(point, distance).map(|e| *e)
+        self.0.within(point, distance).copied()
     }
 }
 
