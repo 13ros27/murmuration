@@ -1,7 +1,7 @@
 use bytemuck::Pod;
-use glam::{IVec3, U64Vec3, UVec3};
+use glam::{IVec3, U64Vec3, UVec3, Vec3};
 use std::cmp::Ordering;
-use std::fmt::{Binary, Debug};
+use std::fmt::{Binary, Debug, Formatter};
 use std::hash::Hash;
 use std::ops::{Add, BitAnd, BitOr, BitXor, Mul, Shl, Shr, Sub};
 
@@ -89,6 +89,10 @@ pub trait OrderedBinary:
         };
         dist.clone() * dist
     }
+    /// Used to filter out NaNs from floats, should probably find a better solution
+    fn is_irrelevant(&self) -> bool {
+        false
+    }
 }
 
 impl OrderedBinary for u32 {
@@ -128,7 +132,25 @@ impl OrderedBinary for i32 {
     }
 }
 
-#[derive(Clone, Eq, PartialOrd, Ord, Debug)]
+impl OrderedBinary for f32 {
+    const ZERO: f32 = 0.0;
+    type Ordered = u32;
+    fn to_ordered(&self) -> Self::Ordered {
+        u32::from_ne_bytes(self.to_ne_bytes()) ^ (1_u32 << 31)
+    }
+    fn from_ordered(ordered: u32) -> Self {
+        f32::from_ne_bytes((ordered ^ (1_u32 << 31)).to_ne_bytes())
+    }
+    fn distance_squared(&self, other: &Self) -> Self {
+        let dist = self.clone() - other.clone();
+        dist.clone() * dist
+    }
+    fn is_irrelevant(&self) -> bool {
+        self.is_nan()
+    }
+}
+
+#[derive(Clone, Eq, PartialOrd, Ord)]
 pub struct PointData<P: Point>([<P::Data as OrderedBinary>::Ordered; 3]);
 
 impl<P: Point> PartialEq for PointData<P> {
@@ -272,6 +294,12 @@ impl Point for UVec3 {
 impl Point for IVec3 {
     type Data = i32;
     fn to_array(&self) -> [i32; 3] {
+        self.to_array()
+    }
+}
+impl Point for Vec3 {
+    type Data = f32;
+    fn to_array(&self) -> [f32; 3] {
         self.to_array()
     }
 }

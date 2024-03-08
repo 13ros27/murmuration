@@ -1,3 +1,4 @@
+use crate::octree::point::OrderedBinary;
 use std::collections::VecDeque;
 use std::iter::FusedIterator;
 
@@ -35,8 +36,6 @@ struct Within<'a, D, P: Point> {
     point: PointData<P>, // The last point value we got from a Skip parent (plus info from Split)
 }
 
-impl<D, P: Point> FusedIterator for Within<'_, D, P> {}
-
 impl<'a, D, P: Point> Iterator for Within<'a, D, P> {
     type Item = &'a D;
     fn next(&mut self) -> Option<&'a D> {
@@ -66,10 +65,8 @@ impl<'a, D, P: Point> Iterator for Within<'a, D, P> {
                 } => {
                     for i in self.parents[0].1.map(|n| n + 1).unwrap_or(0)..8 {
                         if let Some(child) = children[i as usize] {
-                            if depth == &P::MAX_DEPTH
-                                || self.point.closest_distance(i, &self.centre, *depth)
-                                    <= self.sqr_dist
-                            {
+                            let closest = self.point.closest_distance(i, &self.centre, *depth);
+                            if closest <= self.sqr_dist || closest.is_irrelevant() {
                                 self.parents[0].1 = Some(i);
                                 self.parents.push_front((child, None));
                                 moving_up = false;
@@ -104,6 +101,8 @@ impl<'a, D, P: Point> Iterator for Within<'a, D, P> {
         }
     }
 }
+
+impl<D, P: Point> FusedIterator for Within<'_, D, P> {}
 
 impl<D, P: Point> Octree<D, P> {
     pub fn get(&self, point: P) -> impl Iterator<Item = &D> {
