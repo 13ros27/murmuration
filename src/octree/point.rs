@@ -127,8 +127,8 @@ impl OrderedBinary for i32 {
         i32::from_ne_bytes((ordered ^ (1_u32 << 31)).to_ne_bytes())
     }
     fn distance_squared(&self, other: &Self) -> Self {
-        let dist = self.clone() - other.clone();
-        dist.clone() * dist
+        let dist = self - other;
+        dist * dist
     }
 }
 
@@ -142,8 +142,8 @@ impl OrderedBinary for f32 {
         f32::from_ne_bytes((ordered ^ (1_u32 << 31)).to_ne_bytes())
     }
     fn distance_squared(&self, other: &Self) -> Self {
-        let dist = self.clone() - other.clone();
-        dist.clone() * dist
+        let dist = self - other;
+        dist * dist
     }
     fn is_irrelevant(&self) -> bool {
         self.is_nan()

@@ -15,7 +15,7 @@ fn main() {
     println!(
         "{:?}\n{:?}",
         tree,
-        tree.within(Vec3::new(2.0, 1.0, 0.0), 3.5)
+        tree.within(Vec3::new(2.0, 1.0, 0.0), 3.2)
             .collect::<Vec<_>>()
     );
 }

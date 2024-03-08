@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use glam::UVec3;
+use glam::{UVec3, Vec3};
 use murmuration::octree::Octree;
 use rand::distributions::{Distribution, Uniform};
 use rand::prelude::SliceRandom;
@@ -131,6 +131,36 @@ fn within_many(c: &mut Criterion) {
                         uniform.sample(&mut rng),
                     ),
                     10000,
+                )
+                .count(),
+            );
+        })
+    });
+
+    let mut tree = Octree::new();
+    let uniform = Uniform::new_inclusive(0.0, 1000_000.0);
+    let mut rng = rand::thread_rng();
+    for i in 0..100_000 {
+        tree.add(
+            Vec3::new(
+                uniform.sample(&mut rng),
+                uniform.sample(&mut rng),
+                uniform.sample(&mut rng),
+            ),
+            NonZeroU64::new(i + 1).unwrap(),
+        )
+    }
+
+    c.bench_function("within_1000_f32", |b| {
+        b.iter(|| {
+            black_box(
+                tree.within(
+                    Vec3::new(
+                        uniform.sample(&mut rng),
+                        uniform.sample(&mut rng),
+                        uniform.sample(&mut rng),
+                    ),
+                    1000.0,
                 )
                 .count(),
             );
