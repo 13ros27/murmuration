@@ -105,16 +105,16 @@ impl<'a, D, P: Point> Iterator for Within<'a, D, P> {
 impl<D, P: Point> FusedIterator for Within<'_, D, P> {}
 
 impl<D, P: Point> Octree<D, P> {
-    pub fn get(&self, point: P) -> impl Iterator<Item = &D> {
+    pub fn get(&self, point: &P) -> impl Iterator<Item = &D> {
         let leaf = self.get_leaf(point.get_point());
         GetIter { octree: self, leaf }
     }
 
-    pub fn get_single(&self, point: P) -> Option<&D> {
+    pub fn get_single(&self, point: &P) -> Option<&D> {
         self.get(point).next()
     }
 
-    pub fn within(&self, point: P, distance: P::Data) -> impl Iterator<Item = &D> {
+    pub fn within(&self, point: &P, distance: P::Data) -> impl Iterator<Item = &D> {
         let root = self
             .root
             .into_iter()
