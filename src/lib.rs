@@ -1,3 +1,4 @@
+mod mut_iter;
 pub mod octree;
 
 use bevy_app::prelude::*;
@@ -67,6 +68,22 @@ where
         self.grid.get(point).filter_map(|e| self.query.get(e).ok())
     }
 
+    pub fn get_mut<'a>(
+        &'a mut self,
+        point: &P,
+    ) -> mut_iter::SpatialMutIter<
+        'w,
+        's,
+        'a,
+        impl Iterator<Item = Entity> + 'a,
+        D,
+        (F, With<Transform>),
+    > {
+        // SAFETY: .get will never return the same element twice and the grid cannot contain
+        //  duplicates (as only the observers can change it)
+        unsafe { mut_iter::SpatialMutIter::new(self.grid.get(point), &mut self.query) }
+    }
+
     pub fn within(&self, point: &P, distance: P::Data) -> impl Iterator<Item = ROQueryItem<'_, D>> {
         self.grid
             .within(point, distance)
@@ -77,52 +94,17 @@ where
         &'a mut self,
         point: &P,
         distance: P::Data,
-    ) -> sealed::SpatialMut<'w, 's, 'a, impl Iterator<Item = Entity> + 'a, D, (F, With<Transform>)>
-    {
-        sealed::SpatialMut {
-            inner: self.grid.within(point, distance),
-            query: &mut self.query,
-        }
-    }
-}
-
-mod sealed {
-    use bevy_ecs::{
-        prelude::*,
-        query::{QueryData, QueryFilter},
-    };
-
-    pub struct SpatialMut<'w, 's, 'a, I, D, F>
-    where
-        I: Iterator<Item = Entity>,
-        D: QueryData,
-        F: QueryFilter,
-    {
-        pub(crate) inner: I,
-        pub(crate) query: &'a mut Query<'w, 's, D, F>,
-    }
-
-    impl<'s, 'a, I, D, F> Iterator for SpatialMut<'_, 's, 'a, I, D, F>
-    where
-        I: Iterator<Item = Entity>,
-        D: QueryData,
-        F: QueryFilter,
-    {
-        type Item = D::Item<'a>;
-        fn next(&mut self) -> Option<Self::Item> {
-            loop {
-                if let Some(entity) = self.inner.next() {
-                    let ptr = self.query as *mut Query<D, F>;
-                    // SAFETY: The iterator in inner should always only return a particular Entity once
-                    let prov_free_query = unsafe { ptr.as_mut().unwrap_unchecked() };
-                    if let Ok(data) = prov_free_query.get_mut(entity) {
-                        break Some(data);
-                    }
-                } else {
-                    break None;
-                }
-            }
-        }
+    ) -> mut_iter::SpatialMutIter<
+        'w,
+        's,
+        'a,
+        impl Iterator<Item = Entity> + 'a,
+        D,
+        (F, With<Transform>),
+    > {
+        // SAFETY: .within will never return the same element twice and the grid cannot contain
+        //  duplicates (as only the observers can change it)
+        unsafe { mut_iter::SpatialMutIter::new(self.grid.within(point, distance), &mut self.query) }
     }
 }
 
