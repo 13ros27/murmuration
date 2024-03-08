@@ -86,6 +86,7 @@ fn remove_many(c: &mut Criterion) {
                 tree.remove(*item, &NonZeroU64::new(1).unwrap());
             });
         });
+        assert_eq!(tree.num_branches(), 0);
     });
 }
 
