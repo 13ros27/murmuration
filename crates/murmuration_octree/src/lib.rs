@@ -11,7 +11,7 @@ mod impls;
 mod point;
 mod remove;
 
-pub use point::Point;
+pub use point::{ordered::OrderedBinary, Point};
 
 pub struct Octree<D, P: Point> {
     branches: Slab<Branch<D, P>>,
