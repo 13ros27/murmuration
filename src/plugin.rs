@@ -5,6 +5,18 @@ use std::marker::PhantomData;
 use crate::octree::point::Point;
 use crate::SpatialGrid;
 
+/// Plugin for setting up a spatial tree tracking the component `P`.
+///
+/// This is typically used to track `Transform` with `SpatialPlugin::<Transform>::new()`.
+/// # Example
+/// ```
+/// # use bevy::DefaultPlugins;
+/// # use bevy_app::prelude::*;
+/// # use bevy_ecs::prelude::*;
+/// # use bevy_transform::prelude::*;
+/// # use murmuration::SpatialPlugin;
+/// App::new().add_plugins((DefaultPlugins, SpatialPlugin::<Transform>::new()));
+/// ```
 pub struct SpatialPlugin<P: Component + Point>(PhantomData<P>);
 
 impl<P: Component + Point> SpatialPlugin<P> {

@@ -2,6 +2,10 @@ use bevy_ecs::prelude::*;
 
 use crate::octree::{point::Point, Octree};
 
+/// A resource storing the spatial grid for the component `P`.
+///
+/// Created by [`SpatialPlugin`](crate::SpatialGrid) this can be used to directly get the entities
+/// for a particular spatial query rather than going through [`SpatialQuery`](crate::SpatialQuery).
 #[derive(Resource)]
 pub struct SpatialGrid<P: Point>(Octree<Entity, P>);
 
