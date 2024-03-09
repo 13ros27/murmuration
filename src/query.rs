@@ -12,6 +12,10 @@ use crate::{mut_iter::SpatialMutIter, SpatialGrid};
 pub type TransformQuery<'w, 's, D, F = ()> = SpatialQuery<'w, 's, Transform, D, F>;
 
 /// A system parameter for easy spatial querying.
+///
+/// The first generic specifies what type the spatial tree is defined over and is autofilled to
+/// [`Transform`](`bevy_transform::prelude::Transform`) by [`TransformQuery`]. The other two are the
+/// same as the data and filter types on [`Query`](`bevy_ecs::prelude::Query`).
 #[derive(SystemParam)]
 pub struct SpatialQuery<'w, 's, P, D, F = ()>
 where
@@ -29,18 +33,72 @@ where
     D: QueryData,
     F: QueryFilter,
 {
+    /// Returns an immutable reference to the underlying [`Query`](bevy_ecs::prelude::Query`).
     pub fn as_query(&self) -> &Query<'w, 's, D, (F, With<Transform>)> {
         &self.query
     }
 
+    /// Returns a mutable reference to the underlying [`Query`](bevy_ecs::prelude::Query`).
     pub fn as_query_mut(&mut self) -> &mut Query<'w, 's, D, (F, With<Transform>)> {
         &mut self.query
     }
 
+    /// Returns an [`Iterator`] over the read-only query items at the given point.
+    ///
+    /// # Example
+    /// ```
+    /// # use bevy_ecs::prelude::*;
+    /// # use bevy_transform::prelude::*;
+    /// # use murmuration::TransformQuery;
+    /// # #[derive(Component)]
+    /// # struct Player;
+    /// #[derive(Component)]
+    /// struct Enemy {
+    ///     name: String,
+    /// }
+    ///
+    /// /// Print the names of all enemies on top of the player
+    /// fn print_enemy_names(player: Query<&Transform, With<Player>>, spatial: TransformQuery<&Enemy>) {
+    ///     for enemy in spatial.get(player.single()) {
+    ///         println!("The enemy '{}' is being very rude and sitting on me.", enemy.name);
+    ///     }
+    /// }
+    /// ```
+    /// # See also
+    /// - [`get_mut`](Self::get_mut) for mutable queries
+    /// - [`within`](Self::within) to get all within a radius rather than only at the point exactly
     pub fn get(&self, point: &P) -> impl Iterator<Item = ROQueryItem<'_, D>> {
         self.grid.get(point).filter_map(|e| self.query.get(e).ok())
     }
 
+    /// Returns an [`Iterator`] over the query items at the given point.
+    ///
+    /// # Example
+    /// ```
+    /// # use bevy_ecs::prelude::*;
+    /// # use bevy_transform::prelude::*;
+    /// # use murmuration::TransformQuery;
+    /// # #[derive(Component)]
+    /// # struct Player;
+    /// #[derive(Component)]
+    /// struct Enemy {
+    ///     name: String,
+    /// }
+    ///
+    /// /// Rename all enemies in the same position as the player to 'Rude'
+    /// fn rename_nearby_enemies(
+    ///     player: Query<&Transform, With<Player>>,
+    ///     mut spatial: TransformQuery<&mut Enemy>
+    /// ) {
+    ///     for mut enemy in spatial.get_mut(player.single()) {
+    ///         enemy.name = "Rude".to_string();
+    ///     }
+    /// }
+    /// ```
+    /// # See also
+    /// - [`get`](Self::get) for immutable queries
+    /// - [`within_mut`](Self::within_mut) to get all within a radius rather than only at the point
+    /// exactly
     pub fn get_mut<'a>(
         &'a mut self,
         point: &P,
@@ -51,7 +109,7 @@ where
         unsafe { SpatialMutIter::new(self.grid.get(point), &mut self.query) }
     }
 
-    /// Returns an iterator over the read-only query items that are within `distance` of the given
+    /// Returns an [`Iterator`] over the read-only query items that are within `distance` of the given
     /// point.
     ///
     /// # Example
@@ -81,7 +139,7 @@ where
             .filter_map(|e| self.query.get(e).ok())
     }
 
-    /// Returns an iterator over the query items that are within `distance` of the given point.
+    /// Returns an [`Iterator`] over the query items that are within `distance` of the given point.
     ///
     /// # Example
     /// ```

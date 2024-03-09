@@ -75,7 +75,14 @@ impl<P: Component + Point> Plugin for SpatialPlugin<P> {
 #[derive(Component)]
 struct SpatialMove<P: Point + Send + Sync>(P);
 
+/// Exposes the [`move_to`](Self::move_to) method on
+/// [`EntityCommands`](bevy_ecs::system::EntityCommands).
 pub trait EntityCommandsExt {
+    /// This will queue up a change to the given component which occurs at the next sync point
+    /// ([`apply_deferred`](`bevy_ecs::prelude::apply_deferred`)).
+    ///
+    /// Importantly this will also update the [`SpatialGrid`](crate::SpatialGrid) associated with
+    /// this component, so it is the only way you should update its value.
     fn move_to<P: Component + Point + Send + Sync + 'static>(&mut self, new_point: P);
 }
 
