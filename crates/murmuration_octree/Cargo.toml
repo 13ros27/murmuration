@@ -1,0 +1,28 @@
+[package]
+name = "murmuration_octree"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+nonmax = "0.5.5"
+slab = "0.4.9"
+
+bevy_transform = { git = "https://github.com/james-j-obrien/bevy", rev = "4ddbb940b51847f15fc4bc414fcebc0d8f1dfb75", default-features = false, optional = true }
+glam = { version = "0.25.0", optional = true }
+
+[features]
+bevy_transform = ["dep:bevy_transform", "glam"]
+glam = ["dep:glam"]
+
+[dev-dependencies]
+criterion = "0.5.1"
+glam = "0.25.0"
+rand = "0.8.5"
+spatialtree = "0.1.1"
+
+[[bench]]
+name = "glam"
+harness = false
+required-features = ["glam"]
