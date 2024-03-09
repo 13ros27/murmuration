@@ -1,9 +1,8 @@
-use crate::octree::point::OrderedBinary;
 use std::collections::VecDeque;
 use std::iter::FusedIterator;
 
 use super::{
-    point::{Point, PointData},
+    point::{OrderedBinary, Point, PointData},
     Branch, BranchKey, Octree,
 };
 

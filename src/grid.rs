@@ -1,6 +1,5 @@
 use bevy_ecs::prelude::*;
-
-use crate::octree::{point::Point, Octree};
+use murmuration_octree::{Octree, Point};
 
 /// A resource storing the spatial grid for the component `P`.
 ///

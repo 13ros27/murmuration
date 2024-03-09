@@ -3,12 +3,15 @@ use slab::Slab;
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
 
-use point::{Point, PointData};
+use point::PointData;
 
 mod add;
 mod get;
-pub mod point;
+mod impls;
+mod point;
 mod remove;
+
+pub use point::Point;
 
 pub struct Octree<D, P: Point> {
     branches: Slab<Branch<D, P>>,

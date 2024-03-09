@@ -4,8 +4,8 @@ use bevy_ecs::{
     system::SystemParam,
 };
 use bevy_transform::components::Transform;
+use murmuration_octree::Point;
 
-use crate::octree::point::Point;
 use crate::{mut_iter::SpatialMutIter, SpatialGrid};
 
 /// An alias for `SpatialQuery<Transform, ..>`

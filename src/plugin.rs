@@ -4,9 +4,9 @@ use bevy_ecs::{
     system::{EntityCommand, EntityCommands},
 };
 use bevy_log::warn;
+use murmuration_octree::Point;
 use std::marker::PhantomData;
 
-use crate::octree::point::Point;
 use crate::SpatialGrid;
 
 /// Plugin for setting up a spatial tree tracking the component `P`.

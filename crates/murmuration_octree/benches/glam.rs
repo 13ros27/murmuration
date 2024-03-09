@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use glam::{UVec3, Vec3};
-use murmuration::octree::Octree;
+use murmuration_octree::Octree;
 use rand::distributions::{Distribution, Uniform};
 use rand::prelude::SliceRandom;
 use std::num::NonZeroU64;
@@ -26,7 +26,7 @@ fn add_many(c: &mut Criterion) {
         b.iter(|| {
             for i in 0..100_000 {
                 tree.add(
-                    UVec3::new(
+                    &UVec3::new(
                         uniform.sample(&mut rng),
                         uniform.sample(&mut rng),
                         uniform.sample(&mut rng),
@@ -44,7 +44,7 @@ fn get(c: &mut Criterion) {
     let mut rng = rand::thread_rng();
     for i in 0..100_000 {
         tree.add(
-            UVec3::new(
+            &UVec3::new(
                 uniform.sample(&mut rng),
                 uniform.sample(&mut rng),
                 uniform.sample(&mut rng),
@@ -78,12 +78,12 @@ fn remove_many(c: &mut Criterion) {
                 uniform.sample(&mut rng),
             );
             items.push(item);
-            tree.add(item, NonZeroU64::new(1).unwrap())
+            tree.add(&item, NonZeroU64::new(1).unwrap())
         }
         items.shuffle(&mut rng);
         b.iter(|| {
             black_box(for item in &items {
-                tree.remove(*item, &NonZeroU64::new(1).unwrap());
+                tree.remove(item, &NonZeroU64::new(1).unwrap());
             });
         });
         assert_eq!(tree.num_branches(), 0);
@@ -97,7 +97,7 @@ fn within_many(c: &mut Criterion) {
     let mut rng = rand::thread_rng();
     for i in 0..100_000 {
         tree.add(
-            UVec3::new(
+            &UVec3::new(
                 uniform.sample(&mut rng),
                 uniform.sample(&mut rng),
                 uniform.sample(&mut rng),
@@ -142,7 +142,7 @@ fn within_many(c: &mut Criterion) {
     let mut rng = rand::thread_rng();
     for i in 0..100_000 {
         tree.add(
-            Vec3::new(
+            &Vec3::new(
                 uniform.sample(&mut rng),
                 uniform.sample(&mut rng),
                 uniform.sample(&mut rng),

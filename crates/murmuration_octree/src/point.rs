@@ -1,5 +1,3 @@
-use bytemuck::Pod;
-use glam::{IVec3, U64Vec3, UVec3, Vec3};
 use std::cmp::Ordering;
 use std::fmt::{Binary, Debug, Formatter};
 use std::hash::Hash;
@@ -29,7 +27,6 @@ pub trait Unsigned:
     + Eq
     + Ord
     + Hash
-    + Pod
     + Send
     + Sync
 {
@@ -284,29 +281,4 @@ pub trait Point: Clone + Sized {
     }
 
     const MAX_DEPTH: u8 = (std::mem::size_of::<Self::Data>() * 8) as u8;
-}
-
-impl Point for UVec3 {
-    type Data = u32;
-    fn to_array(&self) -> [u32; 3] {
-        self.to_array()
-    }
-}
-impl Point for IVec3 {
-    type Data = i32;
-    fn to_array(&self) -> [i32; 3] {
-        self.to_array()
-    }
-}
-impl Point for Vec3 {
-    type Data = f32;
-    fn to_array(&self) -> [f32; 3] {
-        self.to_array()
-    }
-}
-impl Point for U64Vec3 {
-    type Data = u64;
-    fn to_array(&self) -> [u64; 3] {
-        self.to_array()
-    }
 }

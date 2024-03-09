@@ -3,6 +3,11 @@ name = "murmuration"
 version = "0.1.0"
 edition = "2021"
 
+[workspace]
+members = [
+    "crates/*"
+]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -10,20 +15,11 @@ bevy_app = { git = "https://github.com/james-j-obrien/bevy", rev = "4ddbb940b518
 bevy_ecs = { git = "https://github.com/james-j-obrien/bevy", rev = "4ddbb940b51847f15fc4bc414fcebc0d8f1dfb75", default-features = false }
 bevy_log = { git = "https://github.com/james-j-obrien/bevy", rev = "4ddbb940b51847f15fc4bc414fcebc0d8f1dfb75", default-features = false }
 bevy_transform = { git = "https://github.com/james-j-obrien/bevy", rev = "4ddbb940b51847f15fc4bc414fcebc0d8f1dfb75", default-features = false }
-bytemuck = "1.14.3"
-glam = "0.25.0"
-nonmax = "0.5.5"
-slab = "0.4.9"
+murmuration_octree = { path = "crates/murmuration_octree", features = ["bevy_transform"] }
 
 [dev-dependencies]
 bevy = { git = "https://github.com/james-j-obrien/bevy", rev = "4ddbb940b51847f15fc4bc414fcebc0d8f1dfb75" }
-criterion = "0.5.1"
 rand = "0.8.5"
-spatialtree = "0.1.1"
-
-[[bench]]
-name = "octree"
-harness = false
 
 [[example]]
 name = "within"
