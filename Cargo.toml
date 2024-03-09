@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 bevy_app = { git = "https://github.com/james-j-obrien/bevy", rev = "4ddbb940b51847f15fc4bc414fcebc0d8f1dfb75", default-features = false }
 bevy_ecs = { git = "https://github.com/james-j-obrien/bevy", rev = "4ddbb940b51847f15fc4bc414fcebc0d8f1dfb75", default-features = false }
-bevy_transform = { git = "https://github.com/james-j-obrien/bevy", rev = "4ddbb940b51847f15fc4bc414fcebc0d8f1dfb75", default-features = false } # TODO: Maybe optional?
+bevy_transform = { git = "https://github.com/james-j-obrien/bevy", rev = "4ddbb940b51847f15fc4bc414fcebc0d8f1dfb75", default-features = false }
 bytemuck = "1.14.3"
 glam = "0.25.0"
 nonmax = "0.5.5"

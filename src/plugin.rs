@@ -33,6 +33,14 @@ impl<P: Component + Point> Default for SpatialPlugin<P> {
 
 impl<P: Component + Point> Plugin for SpatialPlugin<P> {
     fn build(&self, app: &mut App) {
+        if app.world.get_resource::<SpatialGrid<P>>().is_some() {
+            // This is required to fulfil the safety invariants for SpatialMutIter
+            panic!(
+                "Setting up a SpatialPlugin for a component that already has a SpatialGrid is \
+                invalid as it would result in duplicated entities in the tree."
+            );
+        }
+
         app.init_resource::<SpatialGrid<P>>();
         app.world.init_component::<SpatialMove<P>>();
 
