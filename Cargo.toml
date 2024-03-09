@@ -10,7 +10,6 @@ bevy_app = { git = "https://github.com/james-j-obrien/bevy", rev = "4ddbb940b518
 bevy_ecs = { git = "https://github.com/james-j-obrien/bevy", rev = "4ddbb940b51847f15fc4bc414fcebc0d8f1dfb75", default-features = false }
 bevy_transform = { git = "https://github.com/james-j-obrien/bevy", rev = "4ddbb940b51847f15fc4bc414fcebc0d8f1dfb75", default-features = false } # TODO: Maybe optional?
 bytemuck = "1.14.3"
-ghost = "0.1.17"
 glam = "0.25.0"
 nonmax = "0.5.5"
 slab = "0.4.9"

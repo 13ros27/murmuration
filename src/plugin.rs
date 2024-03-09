@@ -1,12 +1,12 @@
 use bevy_app::{App, Plugin};
-use bevy_ecs::prelude::*;
-use bevy_ecs::system::EntityCommands;
+use bevy_ecs::{prelude::*, system::EntityCommands};
+use std::marker::PhantomData;
 
 use crate::octree::point::Point;
 use crate::SpatialGrid;
 
-#[ghost::phantom]
-pub struct SpatialPlugin<P: Component + Point>;
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SpatialPlugin<P: Component + Point>(PhantomData<P>);
 
 impl<P: Component + Point> Plugin for SpatialPlugin<P> {
     fn build(&self, app: &mut App) {
