@@ -44,7 +44,7 @@ fn setup(
         Player {
             last_position: Vec3::ZERO,
         },
-        Transform::from_translation(Vec3::ZERO),
+        Transform::from_xyz(0.0, 0.0, 0.0),
     ));
 
     let red = materials.add(Color::from(basic::RED));
@@ -62,11 +62,11 @@ fn setup(
             PbrBundle {
                 mesh: sphere.clone(),
                 material: white.clone(),
-                transform: Transform::from_translation(Vec3::new(
+                transform: Transform::from_xyz(
                     uniform.sample(&mut rng),
                     uniform.sample(&mut rng),
                     uniform.sample(&mut rng),
-                )),
+                ),
                 ..default()
             },
         ));

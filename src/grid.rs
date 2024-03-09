@@ -41,7 +41,7 @@ impl<P: Component + Point> SpatialGrid<P> {
     /// # use murmuration::SpatialGrid;
     /// /// Prints one of the entities at (0, 0, 0)
     /// fn on_centre_system(grid: Res<SpatialGrid<Transform>>) {
-    ///     println!("{:?}", grid.get_single(&Transform::from_translation(Vec3::ZERO)));
+    ///     println!("{:?}", grid.get_single(&Transform::from_xyz(0.0, 0.0, 0.0)));
     /// }
     /// ```
     pub fn get_single(&self, point: &P) -> Option<Entity> {
@@ -61,7 +61,7 @@ impl<P: Component + Point> SpatialGrid<P> {
     /// # use murmuration::SpatialGrid;
     /// /// Prints all the entities at exactly (0, 0, 0)
     /// fn on_centre_system(grid: Res<SpatialGrid<Transform>>) {
-    ///     for entity in grid.get(&Transform::from_translation(Vec3::ZERO)) {
+    ///     for entity in grid.get(&Transform::from_xyz(0.0, 0.0, 0.0)) {
     ///         println!("{:?}", entity);
     ///     }
     /// }
@@ -80,7 +80,7 @@ impl<P: Component + Point> SpatialGrid<P> {
     /// # use murmuration::SpatialGrid;
     /// /// Prints all the entities within 10 of (0, 0, 0)
     /// fn near_centre_system(grid: Res<SpatialGrid<Transform>>) {
-    ///     for entity in grid.within(&Transform::from_translation(Vec3::ZERO), 10.0) {
+    ///     for entity in grid.within(&Transform::from_xyz(0.0, 0.0, 0.0), 10.0) {
     ///         println!("{:?}", entity);
     ///     }
     /// }
