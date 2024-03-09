@@ -5,8 +5,20 @@ use std::marker::PhantomData;
 use crate::octree::point::Point;
 use crate::SpatialGrid;
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SpatialPlugin<P: Component + Point>(PhantomData<P>);
+
+impl<P: Component + Point> SpatialPlugin<P> {
+    pub fn new() -> Self {
+        Self(Default::default())
+    }
+}
+
+impl<P: Component + Point> Default for SpatialPlugin<P> {
+    fn default() -> Self {
+        Self(Default::default())
+    }
+}
 
 impl<P: Component + Point> Plugin for SpatialPlugin<P> {
     fn build(&self, app: &mut App) {

@@ -5,7 +5,7 @@ use rand::distributions::{Distribution, Uniform};
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins, SpatialPlugin::<Transform>::default()))
+        .add_plugins((DefaultPlugins, SpatialPlugin::<Transform>::new()))
         .insert_resource(AmbientLight {
             color: Color::WHITE,
             brightness: 2500.0,
