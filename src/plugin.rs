@@ -24,12 +24,14 @@ use crate::SpatialGrid;
 pub struct SpatialPlugin<P: Component + Point>(PhantomData<P>);
 
 impl<P: Component + Point> SpatialPlugin<P> {
+    /// Create a new `SpatialPlugin<P>`
     pub fn new() -> Self {
         Self(PhantomData)
     }
 }
 
 impl<P: Component + Point> Default for SpatialPlugin<P> {
+    /// Create a new `SpatialPlugin<P>`
     fn default() -> Self {
         Self(PhantomData)
     }

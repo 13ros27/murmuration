@@ -1,15 +1,18 @@
+#![forbid(missing_docs)]
 #![warn(clippy::pedantic)]
 #![allow(
     clippy::cast_possible_truncation,
     clippy::module_name_repetitions,
     clippy::must_use_candidate
 )]
-//! A bevy plugin to track spatial indexes for your position type (typically [`Transform`]) making
-//! it easy and performant to query for all entities at or near a point in space.
+//! A bevy plugin to track spatial indexes for your position type (typically
+//! [`Transform`](bevy_transform::prelude::Transform)) making it easy and performant to query for
+//! all entities at or near a point in space.
 //!
 //! An important thing to note is that due to how this updates its positions you should use
 //! [`EntityCommands::move_to`](EntityCommandsExt::move_to) to move any tracked components (such as
-//! [`Transform`]) as otherwise these movements will be missed and the tree will get out of date.
+//! [`Transform`](bevy_transform::prelude::Transform)) as otherwise these movements will be missed
+//! and the tree will get out of date.
 //!
 //! ```
 //! # use bevy::prelude::{DefaultPlugins, Time, Vec3};
@@ -65,6 +68,7 @@ pub use grid::SpatialGrid;
 pub use plugin::{EntityCommandsExt, EntityWorldMutExt, SpatialPlugin};
 pub use query::{SpatialQuery, TransformQuery};
 
+/// Most commonly used re-exported types.
 pub mod prelude {
     pub use super::{EntityCommandsExt, EntityWorldMutExt, SpatialPlugin, TransformQuery};
 }
