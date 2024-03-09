@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use std::iter::FusedIterator;
 
 use super::{
-    point::{OrderedBinary, Point, PointData},
+    point::{ordered::OrderedBinary, Point, PointData},
     Branch, BranchKey, Octree,
 };
 
