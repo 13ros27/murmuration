@@ -68,11 +68,11 @@ use bevy_transform::prelude::*;
 use crate::octree::point::Point;
 
 pub use grid::SpatialGrid;
-pub use plugin::{EntityCommandsExt, SpatialPlugin};
+pub use plugin::{EntityCommandsExt, EntityWorldMutExt, SpatialPlugin};
 pub use query::{SpatialQuery, TransformQuery};
 
 pub mod prelude {
-    pub use super::{EntityCommandsExt, SpatialPlugin, TransformQuery};
+    pub use super::{EntityCommandsExt, EntityWorldMutExt, SpatialPlugin, TransformQuery};
 }
 
 impl Point for Transform {

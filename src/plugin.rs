@@ -1,5 +1,9 @@
 use bevy_app::{App, Plugin};
-use bevy_ecs::{prelude::*, system::EntityCommands};
+use bevy_ecs::{
+    prelude::*,
+    system::{EntityCommand, EntityCommands},
+};
+use bevy_log::warn;
 use std::marker::PhantomData;
 
 use crate::octree::point::Point;
@@ -39,9 +43,7 @@ impl<P: Component + Point> Plugin for SpatialPlugin<P> {
             "Setting up a SpatialPlugin for a component that already has a SpatialGrid is invalid \
             as it would result in duplicated entities in the tree."
         );
-
         app.init_resource::<SpatialGrid<P>>();
-        app.world.init_component::<SpatialMove<P>>();
 
         // Add an entity to the spatial grid when P gets added to it
         app.world.observer(
@@ -63,42 +65,59 @@ impl<P: Component + Point> Plugin for SpatialPlugin<P> {
                 spatial.remove(entity, point);
             },
         );
-        // Move an entity when we trigger a SpatialMove event on it
-        app.world.observer(
-            |observer: Observer<SpatialMove<P>>,
-             mut query: Query<&mut P>,
-             mut spatial: ResMut<SpatialGrid<P>>| {
-                let entity = observer.source();
-                let SpatialMove(new_point) = observer.data();
-                if let Ok(mut point) = query.get_mut(entity) {
-                    spatial.move_entity(entity, &point, new_point);
-                    *point = new_point.clone();
-                }
-            },
-        );
     }
 }
 
-#[derive(Component)]
-struct SpatialMove<P: Point + Send + Sync>(P);
+/// Exposes the [`move_to`](Self::move_to) method on [`EntityWorldMut`](EntityWorldMut).
+pub trait EntityWorldMutExt {
+    /// This will change the given component on this entity to its new value.
+    ///
+    /// Importantly this will also update the [`SpatialGrid`](SpatialGrid) associated with
+    /// this component, so this and [`EntityCommands::move_to`](EntityCommandsExt::move_to) are the
+    /// only ways you should update the value of a tracked component.
+    fn move_to<P: Component + Point + Send + Sync + 'static>(&mut self, new_point: &P);
+}
 
-/// Exposes the [`move_to`](Self::move_to) method on
-/// [`EntityCommands`](bevy_ecs::system::EntityCommands).
+impl EntityWorldMutExt for EntityWorldMut<'_> {
+    fn move_to<P: Component + Point + Send + Sync + 'static>(&mut self, new_point: &P) {
+        let point = if let Some(mut point) = self.get_mut() {
+            *point = new_point.clone();
+            point.clone()
+        } else {
+            return;
+        };
+
+        let entity = self.id();
+        self.world_scope(|w| {
+            if let Some(mut spatial) = w.get_resource_mut::<SpatialGrid<P>>() {
+                spatial.move_entity(entity, &point, new_point);
+            } else {
+                warn!("Tried to move a non-spatial component using `move_to`");
+            }
+        });
+    }
+}
+
+/// Exposes the [`move_to`](Self::move_to) method on [`EntityCommands`](EntityCommands).
 pub trait EntityCommandsExt {
     /// This will queue up a change to the given component which occurs at the next sync point
     /// ([`apply_deferred`](`bevy_ecs::prelude::apply_deferred`)).
     ///
-    /// Importantly this will also update the [`SpatialGrid`](crate::SpatialGrid) associated with
+    /// Importantly this will also update the [`SpatialGrid`](SpatialGrid) associated with
     /// this component, so it is the only way you should update its value.
     fn move_to<P: Component + Point + Send + Sync + 'static>(&mut self, new_point: P);
 }
 
 impl EntityCommandsExt for EntityCommands<'_> {
     fn move_to<P: Component + Point + Send + Sync + 'static>(&mut self, new_point: P) {
-        let entity = self.id();
-        self.commands()
-            .event(SpatialMove(new_point))
-            .entity(entity)
-            .emit();
+        self.add(SpatialMove(new_point));
+    }
+}
+
+struct SpatialMove<P: Component + Point + Send + Sync + 'static>(P);
+
+impl<P: Component + Point + Send + Sync + 'static> EntityCommand for SpatialMove<P> {
+    fn apply(self, id: Entity, world: &mut World) {
+        world.entity_mut(id).move_to(&self.0);
     }
 }
