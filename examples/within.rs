@@ -1,7 +1,7 @@
-use bevy::color::palettes::basic;
-use bevy::prelude::*;
-use murmuration::{MoveToExt, SpatialPlugin, TransformQuery};
+use bevy::{color::palettes::basic, prelude::*};
 use rand::distributions::{Distribution, Uniform};
+
+use murmuration::prelude::*;
 
 fn main() {
     App::new()
