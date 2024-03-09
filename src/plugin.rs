@@ -7,8 +7,8 @@ use crate::SpatialGrid;
 
 /// Plugin for setting up a spatial tree tracking the component `P`.
 ///
-/// This is typically used to track `Transform` with `SpatialPlugin::<Transform>::new()`.
-/// # Example
+/// This is typically used to track `Transform` with `SpatialPlugin::<Transform>::new()`, and
+/// added to the app with
 /// ```
 /// # use bevy::DefaultPlugins;
 /// # use bevy_app::prelude::*;

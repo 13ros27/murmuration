@@ -7,15 +7,15 @@ use crate::octree::{point::Point, Octree};
 /// Created by [`SpatialPlugin`](crate::SpatialGrid) this can be used to directly get the entities
 /// for a particular spatial query rather than going through [`SpatialQuery`](crate::SpatialQuery).
 #[derive(Resource)]
-pub struct SpatialGrid<P: Point>(Octree<Entity, P>);
+pub struct SpatialGrid<P: Component + Point>(Octree<Entity, P>);
 
-impl<P: Point> Default for SpatialGrid<P> {
+impl<P: Component + Point> Default for SpatialGrid<P> {
     fn default() -> Self {
         Self(Octree::default())
     }
 }
 
-impl<P: Point> SpatialGrid<P> {
+impl<P: Component + Point> SpatialGrid<P> {
     pub(crate) fn add(&mut self, entity: Entity, point: P) {
         self.0.add(point, entity);
     }
@@ -30,7 +30,7 @@ impl<P: Point> SpatialGrid<P> {
 
     /// Returns the entity at the given point or `None` if there is nothing there.
     ///
-    /// If there might be multiple entities in the same location you may want to use
+    /// If there could be multiple entities in the same location you may want to use
     /// [`get`](Self::get) instead.
     ///
     /// # Example

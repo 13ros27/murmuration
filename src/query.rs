@@ -8,12 +8,14 @@ use bevy_transform::components::Transform;
 use crate::octree::point::Point;
 use crate::{mut_iter::SpatialMutIter, SpatialGrid};
 
+/// An alias for `SpatialQuery<Transform, ..>`
 pub type TransformQuery<'w, 's, D, F = ()> = SpatialQuery<'w, 's, Transform, D, F>;
 
+/// A system parameter for easy spatial querying.
 #[derive(SystemParam)]
 pub struct SpatialQuery<'w, 's, P, D, F = ()>
 where
-    P: Point + 'static,
+    P: Component + Point + 'static,
     D: QueryData + 'static,
     F: QueryFilter + 'static,
 {
@@ -23,7 +25,7 @@ where
 
 impl<'w, 's, P, D, F> SpatialQuery<'w, 's, P, D, F>
 where
-    P: Point,
+    P: Component + Point,
     D: QueryData,
     F: QueryFilter,
 {
@@ -49,12 +51,62 @@ where
         unsafe { SpatialMutIter::new(self.grid.get(point), &mut self.query) }
     }
 
+    /// Returns an iterator over the read-only query items that are within `distance` of the given
+    /// point.
+    ///
+    /// # Example
+    /// ```
+    /// # use bevy_ecs::prelude::*;
+    /// # use bevy_transform::prelude::*;
+    /// # use murmuration::TransformQuery;
+    /// # #[derive(Component)]
+    /// # struct Player;
+    /// #[derive(Component)]
+    /// struct Enemy {
+    ///     name: String,
+    /// }
+    ///
+    /// /// Print the names of all enemies near the player
+    /// fn print_enemy_names(player: Query<&Transform, With<Player>>, spatial: TransformQuery<&Enemy>) {
+    ///     for enemy in spatial.within(player.single(), 10.0) {
+    ///         println!("There is a nearby enemy called '{}'", enemy.name);
+    ///     }
+    /// }
+    /// ```
+    /// # See also
+    /// - [`within_mut`](Self::within_mut) for mutable queries
     pub fn within(&self, point: &P, distance: P::Data) -> impl Iterator<Item = ROQueryItem<'_, D>> {
         self.grid
             .within(point, distance)
             .filter_map(|e| self.query.get(e).ok())
     }
 
+    /// Returns an iterator over the query items that are within `distance` of the given point.
+    ///
+    /// # Example
+    /// ```
+    /// # use bevy_ecs::prelude::*;
+    /// # use bevy_transform::prelude::*;
+    /// # use murmuration::TransformQuery;
+    /// # #[derive(Component)]
+    /// # struct Player;
+    /// #[derive(Component)]
+    /// struct Enemy {
+    ///     name: String,
+    /// }
+    ///
+    /// /// Rename all enemies near the player to 'Personal Space Ignorer'
+    /// fn rename_nearby_enemies(
+    ///     player: Query<&Transform, With<Player>>,
+    ///     mut spatial: TransformQuery<&mut Enemy>
+    /// ) {
+    ///     for mut enemy in spatial.within_mut(player.single(), 10.0) {
+    ///         enemy.name = "Personal Space Ignorer".to_string();
+    ///     }
+    /// }
+    /// ```
+    /// # See also
+    /// - [`within`](Self::within) for immutable queries
     pub fn within_mut<'a>(
         &'a mut self,
         point: &P,
