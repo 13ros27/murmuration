@@ -16,15 +16,15 @@ impl<P: Component + Point> Default for SpatialGrid<P> {
 }
 
 impl<P: Component + Point> SpatialGrid<P> {
-    pub(crate) fn add(&mut self, entity: Entity, point: P) {
+    pub(crate) fn add(&mut self, entity: Entity, point: &P) {
         self.0.add(point, entity);
     }
 
-    pub(crate) fn remove(&mut self, entity: &Entity, point: P) -> bool {
-        self.0.remove(point, entity)
+    pub(crate) fn remove(&mut self, entity: Entity, point: &P) -> bool {
+        self.0.remove(point, &entity)
     }
 
-    pub(crate) fn move_entity(&mut self, entity: Entity, old_point: P, new_point: P) -> bool {
+    pub(crate) fn move_entity(&mut self, entity: Entity, old_point: &P, new_point: &P) -> bool {
         self.0.move_data(old_point, new_point, entity)
     }
 

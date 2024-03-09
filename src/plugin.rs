@@ -21,25 +21,24 @@ pub struct SpatialPlugin<P: Component + Point>(PhantomData<P>);
 
 impl<P: Component + Point> SpatialPlugin<P> {
     pub fn new() -> Self {
-        Self(Default::default())
+        Self(PhantomData)
     }
 }
 
 impl<P: Component + Point> Default for SpatialPlugin<P> {
     fn default() -> Self {
-        Self(Default::default())
+        Self(PhantomData)
     }
 }
 
 impl<P: Component + Point> Plugin for SpatialPlugin<P> {
     fn build(&self, app: &mut App) {
-        if app.world.get_resource::<SpatialGrid<P>>().is_some() {
-            // This is required to fulfil the safety invariants for SpatialMutIter
-            panic!(
-                "Setting up a SpatialPlugin for a component that already has a SpatialGrid is \
-                invalid as it would result in duplicated entities in the tree."
-            );
-        }
+        // This is required to fulfil the safety invariants for SpatialMutIter
+        assert!(
+            app.world.get_resource::<SpatialGrid<P>>().is_none(),
+            "Setting up a SpatialPlugin for a component that already has a SpatialGrid is invalid \
+            as it would result in duplicated entities in the tree."
+        );
 
         app.init_resource::<SpatialGrid<P>>();
         app.world.init_component::<SpatialMove<P>>();
@@ -51,7 +50,7 @@ impl<P: Component + Point> Plugin for SpatialPlugin<P> {
              mut spatial: ResMut<SpatialGrid<P>>| {
                 let entity = observer.source();
                 let point = query.get(entity).unwrap();
-                spatial.add(entity, point.clone());
+                spatial.add(entity, point);
             },
         );
         // Remove an entity from the spatial grid when P gets removed from it (or it is despawned)
@@ -61,7 +60,7 @@ impl<P: Component + Point> Plugin for SpatialPlugin<P> {
              mut spatial: ResMut<SpatialGrid<P>>| {
                 let entity = observer.source();
                 let point = query.get(entity).unwrap();
-                spatial.remove(&entity, point.clone());
+                spatial.remove(entity, point);
             },
         );
         // Move an entity when we trigger a SpatialMove event on it
@@ -72,7 +71,7 @@ impl<P: Component + Point> Plugin for SpatialPlugin<P> {
                 let entity = observer.source();
                 let SpatialMove(new_point) = observer.data();
                 if let Ok(mut point) = query.get_mut(entity) {
-                    spatial.move_entity(entity, point.clone(), new_point.clone());
+                    spatial.move_entity(entity, &point, new_point);
                     *point = new_point.clone();
                 }
             },

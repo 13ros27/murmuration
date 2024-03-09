@@ -7,15 +7,16 @@ use super::{
 };
 
 impl<D: PartialEq, P: Point> Octree<D, P> {
-    pub fn remove(&mut self, point: P, data: &D) -> bool {
+    pub fn remove(&mut self, point: &P, data: &D) -> bool {
         let point = point.get_point();
-        if let Ok((leaf, parents)) = self.get_leaf_parents(point) {
+        if let Ok((leaf, parents)) = self.get_leaf_parents(&point) {
             self.remove_from_parent_chain(leaf, parents, data)
         } else {
             false
         }
     }
 
+    #[allow(clippy::too_many_lines)]
     pub(crate) fn remove_from_parent_chain(
         &mut self,
         leaf: BranchKey,
@@ -89,8 +90,7 @@ impl<D: PartialEq, P: Point> Octree<D, P> {
                     let mut sub_child = child;
                     let child_point = loop {
                         match self.get_branch(sub_child) {
-                            Branch::Leaf { point, .. } => break point,
-                            Branch::Skip { point, .. } => break point,
+                            Branch::Leaf { point, .. } | Branch::Skip { point, .. } => break point,
                             Branch::Split { children, .. } => {
                                 if let Some(child) = children.iter().flatten().next() {
                                     sub_child = *child;
@@ -137,7 +137,7 @@ impl<D, P: Point> Octree<D, P> {
     /// Returns the leaf and chain of branches leading to it
     pub(crate) fn get_leaf_parents(
         &self,
-        point: PointData<P>,
+        point: &PointData<P>,
     ) -> Result<(BranchKey, VecDeque<ParentBranch>), VecDeque<ParentBranch>> {
         let Some(mut branch) = self.root else {
             return Err(VecDeque::new());
@@ -150,7 +150,7 @@ impl<D, P: Point> Octree<D, P> {
                 Branch::Leaf {
                     point: skip_point, ..
                 } => {
-                    return (&point == skip_point)
+                    return (point == skip_point)
                         .then_some((branch, parents.clone()))
                         .ok_or(parents);
                 }
@@ -159,7 +159,7 @@ impl<D, P: Point> Octree<D, P> {
                     point_depth: skip_depth,
                     child,
                 } => {
-                    let shared = (&point ^ skip_point).leading_zeros();
+                    let shared = (point ^ skip_point).leading_zeros();
                     if shared >= *skip_depth {
                         parents.push_front(ParentBranch { branch, ind: None });
                         branch = *child;
@@ -169,11 +169,11 @@ impl<D, P: Point> Octree<D, P> {
                     }
                 }
                 Branch::Split { children, .. } => {
-                    let ind = point.nth(depth) as usize;
-                    if let Some(child) = children[ind] {
+                    let ind = point.nth(depth);
+                    if let Some(child) = children[ind as usize] {
                         parents.push_front(ParentBranch {
                             branch,
-                            ind: Some(ind as u8),
+                            ind: Some(ind),
                         });
                         branch = child;
                         depth += 1;
@@ -205,7 +205,7 @@ impl ParentBranch {
             Branch::Leaf { child, .. } => *child = Some(new_child),
             Branch::Skip { child, .. } => *child = new_child,
             Branch::Split { children, .. } => {
-                children[self.ind.unwrap() as usize] = Some(new_child)
+                children[self.ind.unwrap() as usize] = Some(new_child);
             }
         }
     }

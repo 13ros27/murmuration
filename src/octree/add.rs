@@ -4,7 +4,7 @@ use super::{
 };
 
 impl<D, P: Point> Octree<D, P> {
-    pub fn add(&mut self, point: P, data: D) {
+    pub fn add(&mut self, point: &P, data: D) {
         let point = point.get_point();
         if let Some(child_key) = self.root {
             if let Some(branch) = self.add_to_branch(child_key, data, point, 0) {

@@ -81,6 +81,7 @@ pub trait OrderedBinary:
     type Ordered: Unsigned;
     fn to_ordered(&self) -> Self::Ordered;
     fn from_ordered(ordered: Self::Ordered) -> Self;
+    #[must_use]
     fn distance_squared(&self, other: &Self) -> Self {
         let dist = if self > other {
             self.clone() - other.clone()

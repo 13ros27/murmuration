@@ -72,7 +72,7 @@ impl<D, P: Point> Octree<D, P> {
 
     fn add_branch(&mut self, branch: Branch<D, P>) -> BranchKey {
         let key = self.branches.insert(branch);
-        BranchKey(NonMaxU32::new(key as u32).expect("Octree key overflowed 2^32-1"))
+        BranchKey(NonMaxU32::new(key.try_into().unwrap()).expect("Octree key overflowed 2^32-1"))
     }
 
     fn remove_branch(&mut self, branch: BranchKey) {
@@ -90,8 +90,8 @@ impl<D, P: Point> Octree<D, P> {
 }
 
 impl<D: PartialEq, P: Point> Octree<D, P> {
-    pub fn move_data(&mut self, old_point: P, new_point: P, data: D) -> bool {
-        if let Ok((leaf, parents)) = self.get_leaf_parents(old_point.get_point()) {
+    pub fn move_data(&mut self, old_point: &P, new_point: &P, data: D) -> bool {
+        if let Ok((leaf, parents)) = self.get_leaf_parents(&old_point.get_point()) {
             if let Branch::Leaf {
                 child,
                 data: leaf_data,

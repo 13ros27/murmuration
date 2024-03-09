@@ -49,9 +49,8 @@ impl<'a, D, P: Point> Iterator for Within<'a, D, P> {
                     unreachable!()
                 };
                 return Some(data);
-            } else {
-                self.leaf = None;
             }
+            self.leaf = None;
         }
 
         let mut moving_up = false;
@@ -63,7 +62,7 @@ impl<'a, D, P: Point> Iterator for Within<'a, D, P> {
                 Branch::Split {
                     children, depth, ..
                 } => {
-                    for i in self.parents[0].1.map(|n| n + 1).unwrap_or(0)..8 {
+                    for i in self.parents[0].1.map_or(0, |n| n + 1)..8 {
                         if let Some(child) = children[i as usize] {
                             let closest = self.point.closest_distance(i, &self.centre, *depth);
                             if closest <= self.sqr_dist || closest.is_irrelevant() {
@@ -106,7 +105,7 @@ impl<D, P: Point> FusedIterator for Within<'_, D, P> {}
 
 impl<D, P: Point> Octree<D, P> {
     pub fn get(&self, point: &P) -> impl Iterator<Item = &D> {
-        let leaf = self.get_leaf(point.get_point());
+        let leaf = self.get_leaf(&point.get_point());
         GetIter { octree: self, leaf }
     }
 
@@ -130,7 +129,7 @@ impl<D, P: Point> Octree<D, P> {
         }
     }
 
-    fn get_leaf(&self, point: PointData<P>) -> Option<BranchKey> {
+    fn get_leaf(&self, point: &PointData<P>) -> Option<BranchKey> {
         let Some(mut branch) = self.root else {
             return None;
         };
@@ -141,14 +140,14 @@ impl<D, P: Point> Octree<D, P> {
                 Branch::Leaf {
                     point: skip_point, ..
                 } => {
-                    return (&point == skip_point).then_some(branch);
+                    return (point == skip_point).then_some(branch);
                 }
                 Branch::Skip {
                     point: skip_point,
                     point_depth: skip_depth,
                     child,
                 } => {
-                    let shared = (&point ^ skip_point).leading_zeros();
+                    let shared = (point ^ skip_point).leading_zeros();
                     if shared >= *skip_depth {
                         branch = *child;
                         depth = *skip_depth;

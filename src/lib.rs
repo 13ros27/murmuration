@@ -1,3 +1,9 @@
+#![warn(clippy::pedantic)]
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::module_name_repetitions,
+    clippy::must_use_candidate
+)]
 //! A bevy plugin to track spatial indexes for your position type (typically [`Transform`]) making
 //! it easy and performant to query for all entities at or near a point in space.
 //!
