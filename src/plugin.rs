@@ -5,7 +5,6 @@ use std::marker::PhantomData;
 use crate::octree::point::Point;
 use crate::SpatialGrid;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SpatialPlugin<P: Component + Point>(PhantomData<P>);
 
 impl<P: Component + Point> SpatialPlugin<P> {
