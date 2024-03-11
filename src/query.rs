@@ -3,13 +3,13 @@ use bevy_ecs::{
     component::Tick,
     prelude::*,
     query::{QueryData, QueryFilter, ROQueryItem},
-    system::{ReadOnlySystemParam, SystemMeta, SystemParam},
+    system::{SystemMeta, SystemParam},
     world::unsafe_world_cell::UnsafeWorldCell,
 };
 use bevy_transform::components::Transform;
 use murmuration_octree::Point;
 
-use crate::{mut_iter::SpatialMutIter, SpatialGrid};
+use crate::{mut_iter::SpatialMutIter, plugin::sealed::OldPosition, SpatialGrid};
 
 /// An alias for `SpatialQuery<Transform, ..>`
 pub type TransformQuery<'w, 's, D, F = ()> = SpatialQuery<'w, 's, Transform, D, F>;
@@ -179,10 +179,17 @@ where
     }
 }
 
-type SpatialQueryTuple<P, D, F> = (
-    Res<'static, SpatialGrid<P>>,
-    Query<'static, 'static, D, (F, With<Transform>)>,
-);
+type SpatialQuerySet<P, D, F> = ParamSet<
+    'static,
+    'static,
+    (
+        (
+            Res<'static, SpatialGrid<P>>,
+            Query<'static, 'static, D, (F, With<Transform>)>,
+        ),
+        Query<'static, 'static, (&'static P, &'static mut OldPosition<P>)>,
+    ),
+>;
 
 unsafe impl<P, D, F> SystemParam for SpatialQuery<'_, '_, P, D, F>
 where
@@ -190,15 +197,15 @@ where
     D: QueryData + 'static,
     F: QueryFilter + 'static,
 {
-    type State = <SpatialQueryTuple<P, D, F> as SystemParam>::State;
+    type State = <SpatialQuerySet<P, D, F> as SystemParam>::State;
     type Item<'world, 'state> = SpatialQuery<'world, 'state, P, D, F>;
 
     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
-        SpatialQueryTuple::<P, D, F>::init_state(world, system_meta)
+        SpatialQuerySet::<P, D, F>::init_state(world, system_meta)
     }
 
     fn new_archetype(state: &mut Self::State, archetype: &Archetype, system_meta: &mut SystemMeta) {
-        SpatialQueryTuple::<P, D, F>::new_archetype(state, archetype, system_meta)
+        SpatialQuerySet::<P, D, F>::new_archetype(state, archetype, system_meta)
     }
 
     unsafe fn get_param<'world, 'state>(
@@ -208,19 +215,12 @@ where
         change_tick: Tick,
     ) -> Self::Item<'world, 'state> {
         // SAFETY: The tuple implementation upholds the safety invariants
-        let (grid, query) = unsafe {
-            SpatialQueryTuple::<P, D, F>::get_param(state, system_meta, world, change_tick)
+        let mut param_set = unsafe {
+            SpatialQuerySet::<P, D, F>::get_param(state, system_meta, world, change_tick)
         };
-        SpatialQuery { grid, query }
-    }
-}
 
-unsafe impl<'w, 's, P, D, F> ReadOnlySystemParam for SpatialQuery<'w, 's, P, D, F>
-where
-    P: Component + Point + 'static,
-    D: QueryData + 'static,
-    F: QueryFilter + 'static,
-    Res<'w, SpatialGrid<P>>: ReadOnlySystemParam,
-    Query<'w, 's, D, (F, With<Transform>)>: ReadOnlySystemParam,
-{
+        let (grid, query) = param_set.p0();
+        // Slightly questionable lifetime transmutation
+        unsafe { std::mem::transmute(SpatialQuery { grid, query }) }
+    }
 }

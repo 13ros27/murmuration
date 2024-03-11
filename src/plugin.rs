@@ -96,8 +96,14 @@ impl<P: Component + Point> Plugin for SpatialPlugin<P> {
     }
 }
 
-#[derive(Component)]
-struct OldPosition<P: Point>(P);
+pub(crate) mod sealed {
+    use bevy_ecs::prelude::*;
+    use murmuration_octree::Point;
+
+    #[derive(Component)]
+    pub struct OldPosition<P: Point>(pub(crate) P);
+}
+use sealed::*;
 
 /// Exposes the [`move_to`](Self::move_to) method on [`EntityWorldMut`](EntityWorldMut).
 pub trait EntityWorldMutExt {
@@ -118,7 +124,7 @@ impl EntityWorldMutExt for EntityWorldMut<'_> {
             return;
         };
         // Update OldPosition to the new position
-        let old_point = &mut self.get_mut::<OldPosition<P>>().unwrap().0;
+        let old_point = &mut self.get_mut::<sealed::OldPosition<P>>().unwrap().0;
         let old_position = old_point.clone();
         *old_point = new_point.clone();
 
