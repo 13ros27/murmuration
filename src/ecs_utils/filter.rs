@@ -49,7 +49,7 @@ unsafe impl<D: QueryData> WorldQuery for Filter<D> {
     }
 
     fn update_component_access(state: &Self::State, access: &mut FilteredAccess<ComponentId>) {
-        D::update_component_access(state, access)
+        D::update_component_access(state, access);
     }
 
     fn init_state(world: &mut World) -> Self::State {

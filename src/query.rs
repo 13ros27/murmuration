@@ -10,7 +10,7 @@ use bevy_transform::components::Transform;
 use murmuration_octree::Point;
 
 use crate::ecs_utils::filter::Filter;
-use crate::{mut_iter::SpatialMutIter, plugin::OldPosition, SpatialGrid};
+use crate::{mut_iter::SpatialMutIter, plugin::OldPosition, SpatialTree};
 
 /// An alias for `SpatialQuery<Transform, ..>`
 pub type TransformQuery<'w, 's, D, F = ()> = SpatialQuery<'w, 's, Transform, D, F>;
@@ -26,7 +26,7 @@ where
     D: QueryData + 'static,
     F: QueryFilter + 'static,
 {
-    grid: Res<'w, SpatialGrid<P>>,
+    tree: Res<'w, SpatialTree<P>>,
     query: Query<'w, 's, D, (F, With<Transform>)>,
 }
 
@@ -71,7 +71,7 @@ where
     /// - [`get_mut`](Self::get_mut) for mutable queries
     /// - [`within`](Self::within) to get all within a radius rather than only at the point exactly
     pub fn get(&self, point: &P) -> impl Iterator<Item = ROQueryItem<'_, D>> {
-        self.grid.get(point).filter_map(|e| self.query.get(e).ok())
+        self.tree.get(point).filter_map(|e| self.query.get(e).ok())
     }
 
     /// Returns an [`Iterator`] over the query items at the given point.
@@ -107,9 +107,9 @@ where
         point: &P,
     ) -> SpatialMutIter<'w, 's, 'a, impl Iterator<Item = Entity> + 'a, D, (F, With<Transform>)>
     {
-        // SAFETY: .get will never return the same element twice and the grid cannot contain
+        // SAFETY: .get will never return the same element twice and the tree cannot contain
         //  duplicates (as only the observers can change it)
-        unsafe { SpatialMutIter::new(self.grid.get(point), &mut self.query) }
+        unsafe { SpatialMutIter::new(self.tree.get(point), &mut self.query) }
     }
 
     /// Returns an [`Iterator`] over the read-only query items that are within `distance` of the given
@@ -137,7 +137,7 @@ where
     /// # See also
     /// - [`within_mut`](Self::within_mut) for mutable queries
     pub fn within(&self, point: &P, distance: P::Data) -> impl Iterator<Item = ROQueryItem<'_, D>> {
-        self.grid
+        self.tree
             .within(point, distance)
             .filter_map(|e| self.query.get(e).ok())
     }
@@ -174,14 +174,14 @@ where
         distance: P::Data,
     ) -> SpatialMutIter<'w, 's, 'a, impl Iterator<Item = Entity> + 'a, D, (F, With<Transform>)>
     {
-        // SAFETY: .within will never return the same element twice and the grid cannot contain
+        // SAFETY: .within will never return the same element twice and the tree cannot contain
         //  duplicates (as only the observers can change it)
-        unsafe { SpatialMutIter::new(self.grid.within(point, distance), &mut self.query) }
+        unsafe { SpatialMutIter::new(self.tree.within(point, distance), &mut self.query) }
     }
 }
 
 type SpatialQuerySet<P, D, F> = (
-    ResMut<'static, SpatialGrid<P>>,
+    ResMut<'static, SpatialTree<P>>,
     ParamSet<
         'static,
         'static,
@@ -211,7 +211,7 @@ where
     }
 
     fn new_archetype(state: &mut Self::State, archetype: &Archetype, system_meta: &mut SystemMeta) {
-        SpatialQuerySet::<P, D, F>::new_archetype(state, archetype, system_meta)
+        SpatialQuerySet::<P, D, F>::new_archetype(state, archetype, system_meta);
     }
 
     unsafe fn get_param<'world, 'state>(
@@ -221,7 +221,7 @@ where
         change_tick: Tick,
     ) -> Self::Item<'world, 'state> {
         // SAFETY: The tuple implementation upholds the safety invariants
-        let (mut grid, mut param_set) = unsafe {
+        let (mut tree, mut param_set) = unsafe {
             SpatialQuerySet::<P, D, F>::get_param(state, system_meta, world, change_tick)
         };
 
@@ -232,14 +232,14 @@ where
                 .is_newer_than(p.last_changed(), change_tick)
         }) {
             // TODO: It may also be worth checking if the position has actually changed here (maybe instead of change ticks?)
-            grid.move_entity(entity, &old_position.0, &position);
-            *old_position = OldPosition(position.clone())
+            tree.move_entity(entity, &old_position.0, &position);
+            *old_position = OldPosition(position.clone());
         }
 
         // I believe this is sound because it is just working around how ParamSet uses a unique reference
         let query: Query<'world, 'state, _, _> = unsafe { std::mem::transmute(param_set.p0()) };
         SpatialQuery {
-            grid: grid.into(),
+            tree: tree.into(),
             query,
         }
     }

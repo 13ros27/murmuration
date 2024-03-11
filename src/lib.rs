@@ -50,14 +50,14 @@
 //! ```
 
 pub(crate) mod ecs_utils;
-mod grid;
 mod mut_iter;
 mod plugin;
 mod query;
+mod tree;
 
-pub use grid::SpatialGrid;
 pub use plugin::{OldPosition, SpatialPlugin};
 pub use query::{SpatialQuery, TransformQuery};
+pub use tree::SpatialTree;
 
 /// Most commonly used re-exported types.
 pub mod prelude {

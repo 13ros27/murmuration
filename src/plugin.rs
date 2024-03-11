@@ -3,7 +3,7 @@ use bevy_ecs::prelude::*;
 use murmuration_octree::Point;
 use std::marker::PhantomData;
 
-use crate::SpatialGrid;
+use crate::SpatialTree;
 
 /// Plugin for setting up a spatial tree tracking the component `P`.
 ///
@@ -37,18 +37,18 @@ impl<P: Component + Point> Plugin for SpatialPlugin<P> {
     fn build(&self, app: &mut App) {
         // This is required to fulfil the safety invariants for SpatialMutIter
         assert!(
-            app.world.get_resource::<SpatialGrid<P>>().is_none(),
-            "Setting up a SpatialPlugin for a component that already has a SpatialGrid is invalid \
+            app.world.get_resource::<SpatialTree<P>>().is_none(),
+            "Setting up a SpatialPlugin for a component that already has a SpatialTree is invalid \
             as it would result in duplicated entities in the tree."
         );
-        app.init_resource::<SpatialGrid<P>>();
+        app.init_resource::<SpatialTree<P>>();
 
-        // Add an entity to the spatial grid when P gets added to it
+        // Add an entity to the spatial tree when P gets added to it
         app.world.observer(
             |observer: Observer<OnAdd, P>,
              mut commands: Commands,
              query: Query<&P>,
-             mut spatial: ResMut<SpatialGrid<P>>| {
+             mut spatial: ResMut<SpatialTree<P>>| {
                 let entity = observer.source();
                 let point = query.get(entity).unwrap();
                 spatial.add(entity, point);
@@ -57,13 +57,13 @@ impl<P: Component + Point> Plugin for SpatialPlugin<P> {
                     .try_insert(OldPosition(point.clone()));
             },
         );
-        // Add an entity to the spatial grid if P gets inserted to it and wasn't already there,
-        // otherwise move the entity to its new position in the grid and update OldPosition.
+        // Add an entity to the spatial tree if P gets inserted to it and wasn't already there,
+        // otherwise move the entity to its new position in the tree and update OldPosition.
         app.world.observer(
             |observer: Observer<OnInsert, P>,
              mut commands: Commands,
              mut query: Query<(&P, Option<&mut OldPosition<P>>)>,
-             mut spatial: ResMut<SpatialGrid<P>>| {
+             mut spatial: ResMut<SpatialTree<P>>| {
                 let entity = observer.source();
                 let (point, old_point) = query.get_mut(entity).unwrap();
                 if let Some(mut old_point) = old_point {
@@ -77,12 +77,12 @@ impl<P: Component + Point> Plugin for SpatialPlugin<P> {
                 }
             },
         );
-        // Remove an entity from the spatial grid when P gets removed from it (or it is despawned)
+        // Remove an entity from the spatial tree when P gets removed from it (or it is despawned)
         app.world.observer(
             |observer: Observer<OnRemove, P>,
              mut commands: Commands,
              query: Query<&P>,
-             mut spatial: ResMut<SpatialGrid<P>>| {
+             mut spatial: ResMut<SpatialTree<P>>| {
                 let entity = observer.source();
                 let point = query.get(entity).unwrap();
                 spatial.remove(entity, point);
@@ -94,7 +94,7 @@ impl<P: Component + Point> Plugin for SpatialPlugin<P> {
 
 /// Automatically added to all entities with the component `P`.
 ///
-/// This is publicly visible so that it can be used in [`SpatialGrid::update_tree`].
+/// This is publicly visible so that it can be used in [`SpatialTree::update_tree`].
 #[derive(Component, Debug)]
 #[doc(hidden)]
 pub struct OldPosition<P: Point>(pub(crate) P);
