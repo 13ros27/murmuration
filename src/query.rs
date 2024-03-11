@@ -219,6 +219,7 @@ where
             SpatialQuerySet::<P, D, F>::get_param(state, system_meta, world, change_tick)
         };
 
+        // Find any updated positions and update them in the tree
         let mut query = param_set.p1();
         query
             .iter_mut()
@@ -227,7 +228,6 @@ where
                 !o.last_changed()
                     .is_newer_than(p.last_changed(), change_tick)
             })
-            .inspect(|(e, _, _)| println!("Updating {e:?}"))
             .for_each(|(e, p, mut o)| {
                 grid.move_entity(e, &o.0, &p);
                 *o = OldPosition(p.clone())
