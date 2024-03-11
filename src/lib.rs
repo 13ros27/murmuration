@@ -9,11 +9,6 @@
 //! [`Transform`](bevy_transform::prelude::Transform)) making it easy and performant to query for
 //! all entities at or near a point in space.
 //!
-//! An important thing to note is that due to how this updates its positions you should use
-//! [`EntityCommands::move_to`](EntityCommandsExt::move_to) to move any tracked components (such as
-//! [`Transform`](bevy_transform::prelude::Transform)) as otherwise these movements will be missed
-//! and the tree will get out of date.
-//!
 //! ```
 //! # use bevy::prelude::{DefaultPlugins, Time, Vec3};
 //! # use bevy_app::prelude::*;
