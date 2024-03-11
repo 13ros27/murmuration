@@ -34,9 +34,9 @@ impl<P: Component + Point> SpatialGrid<P> {
     ///
     /// # Example
     /// ```
+    /// # use bevy::prelude::Vec3;
     /// # use bevy_ecs::prelude::*;
     /// # use bevy_transform::prelude::*;
-    /// # use glam::Vec3;
     /// # use murmuration::SpatialGrid;
     /// /// Prints one of the entities at (0, 0, 0)
     /// fn on_centre_system(grid: Res<SpatialGrid<Transform>>) {
@@ -54,9 +54,9 @@ impl<P: Component + Point> SpatialGrid<P> {
     ///
     /// # Example
     /// ```
+    /// # use bevy::prelude::Vec3;
     /// # use bevy_ecs::prelude::*;
     /// # use bevy_transform::prelude::*;
-    /// # use glam::Vec3;
     /// # use murmuration::SpatialGrid;
     /// /// Prints all the entities at exactly (0, 0, 0)
     /// fn on_centre_system(grid: Res<SpatialGrid<Transform>>) {
@@ -73,9 +73,9 @@ impl<P: Component + Point> SpatialGrid<P> {
     ///
     /// # Example
     /// ```
+    /// # use bevy::prelude::Vec3;
     /// # use bevy_ecs::prelude::*;
     /// # use bevy_transform::prelude::*;
-    /// # use glam::Vec3;
     /// # use murmuration::SpatialGrid;
     /// /// Prints all the entities within 10 of (0, 0, 0)
     /// fn near_centre_system(grid: Res<SpatialGrid<Transform>>) {

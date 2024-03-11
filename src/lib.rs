@@ -35,11 +35,11 @@
 //! }
 //!
 //! fn move_player(
-//!     mut query: Query<&Transform, With<Player>>,
+//!     mut query: Query<&mut Transform, With<Player>>,
 //!     time: Res<Time>,
 //! ) {
 //!     let mut transform = query.single_mut();
-//!     *transform.translation += Vec3::X * time.delta_seconds();
+//!     transform.translation += Vec3::X * time.delta_seconds();
 //! }
 //!
 //! fn print_nearby(player: Query<&Transform, With<Player>>, spatial: TransformQuery<&Enemy>) {
