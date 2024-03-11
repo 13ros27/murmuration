@@ -49,14 +49,14 @@
 //! }
 //! ```
 
-mod filter;
+pub(crate) mod ecs_utils;
 mod grid;
 mod mut_iter;
 mod plugin;
 mod query;
 
 pub use grid::SpatialGrid;
-pub use plugin::SpatialPlugin;
+pub use plugin::{OldPosition, SpatialPlugin};
 pub use query::{SpatialQuery, TransformQuery};
 
 /// Most commonly used re-exported types.

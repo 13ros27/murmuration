@@ -1,9 +1,11 @@
 use bevy_ecs::prelude::*;
 use murmuration_octree::{Octree, Point};
 
+use crate::{ecs_utils::into_query::IntoQuery, plugin::OldPosition};
+
 /// A resource storing the spatial grid for the component `P`.
 ///
-/// Created by [`SpatialPlugin`](crate::SpatialGrid) this can be used to directly get the entities
+/// Created by [`SpatialPlugin`](crate::SpatialPlugin) this can be used to directly get the entities
 /// for a particular spatial query rather than going through [`SpatialQuery`](crate::SpatialQuery).
 #[derive(Resource)]
 pub struct SpatialGrid<P: Component + Point>(Octree<Entity, P>);
@@ -86,5 +88,29 @@ impl<P: Component + Point> SpatialGrid<P> {
     /// ```
     pub fn within(&self, point: &P, distance: P::Data) -> impl Iterator<Item = Entity> + '_ {
         self.0.within(point, distance).copied()
+    }
+}
+
+impl<P: Component + Point + PartialEq> SpatialGrid<P> {
+    /// Updates the spatial tree with any changes to the entities passed in.
+    ///
+    /// This shouldn't typically be needed as if you use [`SpatialQuery`](crate::SpatialQuery) then
+    /// all relevant entities will already be updated but this may be required if accessing the tree
+    /// via `Res<SpatialGrid>` as entity positions in the tree are only updated when necessary.
+    ///
+    /// At its simplest this can just be passed `Query<(Entity, &P, &mut OldPosition<P>)>` however
+    /// it can also be passed a filtered query (any query containing at least those items) and then
+    /// it will only update the entities in the passed query, speeding it up.
+    pub fn update_tree<'w>(
+        &mut self,
+        mut query: impl IntoQuery<(Entity, &'w P, &'w mut OldPosition<P>)>,
+    ) {
+        let mut lens = query.transmute_lens();
+        for (entity, position, mut old_position) in lens.query().iter_mut() {
+            if position != old_position.0 {
+                self.move_entity(entity, &old_position.0, &position);
+                *old_position = OldPosition(position.clone())
+            }
+        }
     }
 }

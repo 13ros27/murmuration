@@ -1,9 +1,11 @@
-use bevy_ecs::archetype::Archetype;
-use bevy_ecs::component::{ComponentId, Tick};
-use bevy_ecs::prelude::*;
-use bevy_ecs::query::{FilteredAccess, QueryData, QueryFilter, WorldQuery};
-use bevy_ecs::storage::{Table, TableRow};
-use bevy_ecs::world::unsafe_world_cell::UnsafeWorldCell;
+use bevy_ecs::{
+    archetype::Archetype,
+    component::{ComponentId, Tick},
+    prelude::*,
+    query::{FilteredAccess, QueryData, QueryFilter, WorldQuery},
+    storage::{Table, TableRow},
+    world::unsafe_world_cell::UnsafeWorldCell,
+};
 use std::marker::PhantomData;
 
 #[derive(Default)]

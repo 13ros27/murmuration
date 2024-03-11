@@ -9,7 +9,8 @@ use bevy_ecs::{
 use bevy_transform::components::Transform;
 use murmuration_octree::Point;
 
-use crate::{filter::Filter, mut_iter::SpatialMutIter, plugin::sealed::OldPosition, SpatialGrid};
+use crate::ecs_utils::filter::Filter;
+use crate::{mut_iter::SpatialMutIter, plugin::OldPosition, SpatialGrid};
 
 /// An alias for `SpatialQuery<Transform, ..>`
 pub type TransformQuery<'w, 's, D, F = ()> = SpatialQuery<'w, 's, Transform, D, F>;
@@ -230,6 +231,7 @@ where
             !o.last_changed()
                 .is_newer_than(p.last_changed(), change_tick)
         }) {
+            // TODO: It may also be worth checking if the position has actually changed here (maybe instead of change ticks?)
             grid.move_entity(entity, &old_position.0, &position);
             *old_position = OldPosition(position.clone())
         }

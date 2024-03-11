@@ -92,11 +92,9 @@ impl<P: Component + Point> Plugin for SpatialPlugin<P> {
     }
 }
 
-pub(crate) mod sealed {
-    use bevy_ecs::prelude::*;
-    use murmuration_octree::Point;
-
-    #[derive(Component, Debug)]
-    pub struct OldPosition<P: Point>(pub(crate) P);
-}
-use sealed::*;
+/// Automatically added to all entities with the component `P`.
+///
+/// This is publicly visible so that it can be used in [`SpatialGrid::update_tree`].
+#[derive(Component, Debug)]
+#[doc(hidden)]
+pub struct OldPosition<P: Point>(pub(crate) P);
