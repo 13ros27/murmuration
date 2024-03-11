@@ -89,9 +89,7 @@ impl<P: Component + Point> SpatialTree<P> {
     pub fn within(&self, point: &P, distance: P::Data) -> impl Iterator<Item = Entity> + '_ {
         self.0.within(point, distance).copied()
     }
-}
 
-impl<P: Component + Point + PartialEq> SpatialTree<P> {
     /// Updates the spatial tree with any changes to the entities passed in.
     ///
     /// This shouldn't typically be needed as if you use [`SpatialQuery`](crate::SpatialQuery) then
