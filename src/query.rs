@@ -25,7 +25,7 @@ where
     D: QueryData + 'static,
     F: QueryFilter + 'static,
 {
-    grid: Res<'w, SpatialGrid<P>>,
+    grid: &'w SpatialGrid<P>,
     query: Query<'w, 's, D, (F, With<Transform>)>,
 }
 
@@ -179,17 +179,17 @@ where
     }
 }
 
-type SpatialQuerySet<P, D, F> = ParamSet<
-    'static,
-    'static,
-    (
+type SpatialQuerySet<P, D, F> = (
+    ResMut<'static, SpatialGrid<P>>,
+    ParamSet<
+        'static,
+        'static,
         (
-            Res<'static, SpatialGrid<P>>,
             Query<'static, 'static, D, (F, With<Transform>)>,
+            Query<'static, 'static, ((Entity, Ref<'static, P>, &'static mut OldPosition<P>), D), F>,
         ),
-        Query<'static, 'static, (&'static P, &'static mut OldPosition<P>)>,
-    ),
->;
+    >,
+);
 
 unsafe impl<P, D, F> SystemParam for SpatialQuery<'_, '_, P, D, F>
 where
@@ -215,12 +215,26 @@ where
         change_tick: Tick,
     ) -> Self::Item<'world, 'state> {
         // SAFETY: The tuple implementation upholds the safety invariants
-        let mut param_set = unsafe {
+        let (mut grid, mut param_set) = unsafe {
             SpatialQuerySet::<P, D, F>::get_param(state, system_meta, world, change_tick)
         };
 
-        let (grid, query) = param_set.p0();
+        let mut query = param_set.p1();
+        query
+            .iter_mut()
+            .map(|(q, _)| q)
+            .filter(|(_, p, o)| {
+                !o.last_changed()
+                    .is_newer_than(p.last_changed(), change_tick)
+            })
+            .inspect(|(e, _, _)| println!("Updating {e:?}"))
+            .for_each(|(e, p, mut o)| {
+                grid.move_entity(e, &o.0, &p);
+                *o = OldPosition(p.clone())
+            });
+
+        let query = param_set.p0();
         // Slightly questionable lifetime transmutation
-        unsafe { std::mem::transmute(SpatialQuery { grid, query }) }
+        unsafe { std::mem::transmute(SpatialQuery { grid: &grid, query }) }
     }
 }
