@@ -59,6 +59,7 @@
 //! }
 //! ```
 
+mod filter;
 mod grid;
 mod mut_iter;
 mod plugin;
