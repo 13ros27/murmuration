@@ -9,7 +9,7 @@ use bevy_ecs::{
 use bevy_transform::components::Transform;
 use murmuration_octree::Point;
 
-use crate::{mut_iter::SpatialMutIter, plugin::sealed::OldPosition, SpatialGrid};
+use crate::{filter::Filter, mut_iter::SpatialMutIter, plugin::sealed::OldPosition, SpatialGrid};
 
 /// An alias for `SpatialQuery<Transform, ..>`
 pub type TransformQuery<'w, 's, D, F = ()> = SpatialQuery<'w, 's, Transform, D, F>;
@@ -186,7 +186,12 @@ type SpatialQuerySet<P, D, F> = (
         'static,
         (
             Query<'static, 'static, D, (F, With<Transform>)>,
-            Query<'static, 'static, ((Entity, Ref<'static, P>, &'static mut OldPosition<P>), D), F>,
+            Query<
+                'static,
+                'static,
+                (Entity, Ref<'static, P>, &'static mut OldPosition<P>),
+                (Filter<D>, F),
+            >,
         ),
     >,
 );
@@ -221,12 +226,10 @@ where
 
         // Find any updated positions and update them in the tree
         let mut query = param_set.p1();
-        for (entity, position, mut old_position) in
-            query.iter_mut().map(|(q, _)| q).filter(|(_, p, o)| {
-                !o.last_changed()
-                    .is_newer_than(p.last_changed(), change_tick)
-            })
-        {
+        for (entity, position, mut old_position) in query.iter_mut().filter(|(_, p, o)| {
+            !o.last_changed()
+                .is_newer_than(p.last_changed(), change_tick)
+        }) {
             grid.move_entity(entity, &old_position.0, &position);
             *old_position = OldPosition(position.clone())
         }
