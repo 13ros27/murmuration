@@ -25,7 +25,7 @@ where
     D: QueryData + 'static,
     F: QueryFilter + 'static,
 {
-    grid: &'w SpatialGrid<P>,
+    grid: Res<'w, SpatialGrid<P>>,
     query: Query<'w, 's, D, (F, With<Transform>)>,
 }
 
@@ -233,8 +233,11 @@ where
                 *o = OldPosition(p.clone())
             });
 
-        let query = param_set.p0();
-        // Slightly questionable lifetime transmutation
-        unsafe { std::mem::transmute(SpatialQuery { grid: &grid, query }) }
+        // I believe this is sound because it is just working around how ParamSet uses a unique reference
+        let query: Query<'world, 'state, _, _> = unsafe { std::mem::transmute(param_set.p0()) };
+        SpatialQuery {
+            grid: grid.into(),
+            query,
+        }
     }
 }
