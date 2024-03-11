@@ -1,7 +1,10 @@
 use bevy_ecs::{
+    archetype::Archetype,
+    component::Tick,
     prelude::*,
     query::{QueryData, QueryFilter, ROQueryItem},
-    system::SystemParam,
+    system::{ReadOnlySystemParam, SystemMeta, SystemParam},
+    world::unsafe_world_cell::UnsafeWorldCell,
 };
 use bevy_transform::components::Transform;
 use murmuration_octree::Point;
@@ -16,7 +19,6 @@ pub type TransformQuery<'w, 's, D, F = ()> = SpatialQuery<'w, 's, Transform, D, 
 /// The first generic specifies what type the spatial tree is defined over and is autofilled to
 /// [`Transform`](`bevy_transform::prelude::Transform`) by [`TransformQuery`]. The other two are the
 /// same as the data and filter types on [`Query`](`bevy_ecs::prelude::Query`).
-#[derive(SystemParam)]
 pub struct SpatialQuery<'w, 's, P, D, F = ()>
 where
     P: Component + Point + 'static,
@@ -175,4 +177,50 @@ where
         //  duplicates (as only the observers can change it)
         unsafe { SpatialMutIter::new(self.grid.within(point, distance), &mut self.query) }
     }
+}
+
+type SpatialQueryTuple<P, D, F> = (
+    Res<'static, SpatialGrid<P>>,
+    Query<'static, 'static, D, (F, With<Transform>)>,
+);
+
+unsafe impl<P, D, F> SystemParam for SpatialQuery<'_, '_, P, D, F>
+where
+    P: Component + Point + 'static,
+    D: QueryData + 'static,
+    F: QueryFilter + 'static,
+{
+    type State = <SpatialQueryTuple<P, D, F> as SystemParam>::State;
+    type Item<'world, 'state> = SpatialQuery<'world, 'state, P, D, F>;
+
+    fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
+        SpatialQueryTuple::<P, D, F>::init_state(world, system_meta)
+    }
+
+    fn new_archetype(state: &mut Self::State, archetype: &Archetype, system_meta: &mut SystemMeta) {
+        SpatialQueryTuple::<P, D, F>::new_archetype(state, archetype, system_meta)
+    }
+
+    unsafe fn get_param<'world, 'state>(
+        state: &'state mut Self::State,
+        system_meta: &SystemMeta,
+        world: UnsafeWorldCell<'world>,
+        change_tick: Tick,
+    ) -> Self::Item<'world, 'state> {
+        // SAFETY: The tuple implementation upholds the safety invariants
+        let (grid, query) = unsafe {
+            SpatialQueryTuple::<P, D, F>::get_param(state, system_meta, world, change_tick)
+        };
+        SpatialQuery { grid, query }
+    }
+}
+
+unsafe impl<'w, 's, P, D, F> ReadOnlySystemParam for SpatialQuery<'w, 's, P, D, F>
+where
+    P: Component + Point + 'static,
+    D: QueryData + 'static,
+    F: QueryFilter + 'static,
+    Res<'w, SpatialGrid<P>>: ReadOnlySystemParam,
+    Query<'w, 's, D, (F, With<Transform>)>: ReadOnlySystemParam,
+{
 }
