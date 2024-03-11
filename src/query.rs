@@ -221,17 +221,15 @@ where
 
         // Find any updated positions and update them in the tree
         let mut query = param_set.p1();
-        query
-            .iter_mut()
-            .map(|(q, _)| q)
-            .filter(|(_, p, o)| {
+        for (entity, position, mut old_position) in
+            query.iter_mut().map(|(q, _)| q).filter(|(_, p, o)| {
                 !o.last_changed()
                     .is_newer_than(p.last_changed(), change_tick)
             })
-            .for_each(|(e, p, mut o)| {
-                grid.move_entity(e, &o.0, &p);
-                *o = OldPosition(p.clone())
-            });
+        {
+            grid.move_entity(entity, &old_position.0, &position);
+            *old_position = OldPosition(position.clone())
+        }
 
         // I believe this is sound because it is just working around how ParamSet uses a unique reference
         let query: Query<'world, 'state, _, _> = unsafe { std::mem::transmute(param_set.p0()) };
