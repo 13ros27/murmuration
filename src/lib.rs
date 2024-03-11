@@ -35,16 +35,11 @@
 //! }
 //!
 //! fn move_player(
-//!     mut commands: Commands,
-//!     query: Query<(Entity, &Transform), With<Player>>,
+//!     mut query: Query<&Transform, With<Player>>,
 //!     time: Res<Time>,
 //! ) {
-//!     let (player, transform) = query.single();
-//!     let new_transform =
-//!         transform.with_translation(transform.translation + Vec3::X * time.delta_seconds());
-//!
-//!     // Use move_to so that the spatial tree will also update
-//!     commands.entity(player).move_to(new_transform);
+//!     let mut transform = query.single_mut();
+//!     *transform.translation += Vec3::X * time.delta_seconds();
 //! }
 //!
 //! fn print_nearby(player: Query<&Transform, With<Player>>, spatial: TransformQuery<&Enemy>) {
