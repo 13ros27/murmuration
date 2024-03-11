@@ -1,9 +1,5 @@
 use bevy_app::{App, Plugin};
-use bevy_ecs::{
-    prelude::*,
-    system::{EntityCommand, EntityCommands},
-};
-use bevy_log::warn;
+use bevy_ecs::prelude::*;
 use murmuration_octree::Point;
 use std::marker::PhantomData;
 
@@ -100,65 +96,7 @@ pub(crate) mod sealed {
     use bevy_ecs::prelude::*;
     use murmuration_octree::Point;
 
-    #[derive(Component)]
+    #[derive(Component, Debug)]
     pub struct OldPosition<P: Point>(pub(crate) P);
 }
 use sealed::*;
-
-/// Exposes the [`move_to`](Self::move_to) method on [`EntityWorldMut`](EntityWorldMut).
-pub trait EntityWorldMutExt {
-    /// This will change the given component on this entity to its new value.
-    ///
-    /// Importantly this will also update the [`SpatialGrid`](SpatialGrid) associated with
-    /// this component, so this and [`EntityCommands::move_to`](EntityCommandsExt::move_to) are the
-    /// only ways you should update the value of a tracked component.
-    fn move_to<P: Component + Point + Send + Sync + 'static>(&mut self, new_point: &P);
-}
-
-impl EntityWorldMutExt for EntityWorldMut<'_> {
-    fn move_to<P: Component + Point + Send + Sync + 'static>(&mut self, new_point: &P) {
-        if let Some(mut point) = self.get_mut() {
-            *point = new_point.clone();
-        } else {
-            warn!("Tried to use move_to on an entity that doesn't have that component");
-            return;
-        };
-        // Update OldPosition to the new position
-        let old_point = &mut self.get_mut::<sealed::OldPosition<P>>().unwrap().0;
-        let old_position = old_point.clone();
-        *old_point = new_point.clone();
-
-        let entity = self.id();
-        self.world_scope(|w| {
-            if let Some(mut spatial) = w.get_resource_mut::<SpatialGrid<P>>() {
-                spatial.move_entity(entity, &old_position, new_point);
-            } else {
-                warn!("Tried to move a non-spatial component using `move_to`");
-            }
-        });
-    }
-}
-
-/// Exposes the [`move_to`](Self::move_to) method on [`EntityCommands`](EntityCommands).
-pub trait EntityCommandsExt {
-    /// This will queue up a change to the given component which occurs at the next sync point
-    /// ([`apply_deferred`](`bevy_ecs::prelude::apply_deferred`)).
-    ///
-    /// Importantly this will also update the [`SpatialGrid`](SpatialGrid) associated with
-    /// this component, so it is the only way you should update its value.
-    fn move_to<P: Component + Point + Send + Sync + 'static>(&mut self, new_point: P);
-}
-
-impl EntityCommandsExt for EntityCommands<'_> {
-    fn move_to<P: Component + Point + Send + Sync + 'static>(&mut self, new_point: P) {
-        self.add(SpatialMove(new_point));
-    }
-}
-
-struct SpatialMove<P: Component + Point + Send + Sync + 'static>(P);
-
-impl<P: Component + Point + Send + Sync + 'static> EntityCommand for SpatialMove<P> {
-    fn apply(self, id: Entity, world: &mut World) {
-        world.entity_mut(id).move_to(&self.0);
-    }
-}

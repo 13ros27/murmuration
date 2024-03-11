@@ -74,24 +74,20 @@ fn setup(
 }
 
 fn move_player(
-    mut commands: Commands,
     input: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
-    mut player: Query<(Entity, &Transform, &mut Player)>,
+    mut player: Query<(&mut Transform, &mut Player)>,
 ) {
     let forward = input.pressed(KeyCode::KeyW) as isize - input.pressed(KeyCode::KeyS) as isize;
     let right = input.pressed(KeyCode::KeyD) as isize - input.pressed(KeyCode::KeyA) as isize;
     let up =
         input.pressed(KeyCode::ShiftLeft) as isize - input.pressed(KeyCode::ControlLeft) as isize;
 
-    let (entity, transform, mut player) = player.single_mut();
+    let (mut transform, mut player) = player.single_mut();
     let movement = Vec3::X * forward as f32 + Vec3::Z * right as f32 + Vec3::Y * up as f32;
     if movement != Vec3::ZERO {
-        let new_translation = transform.translation + movement * 100.0 * time.delta_seconds();
-        commands
-            .entity(entity)
-            .move_to(Transform::from_translation(new_translation));
         player.last_position = transform.translation;
+        transform.translation += movement * 100.0 * time.delta_seconds();
     }
 }
 

@@ -65,10 +65,10 @@ mod plugin;
 mod query;
 
 pub use grid::SpatialGrid;
-pub use plugin::{EntityCommandsExt, EntityWorldMutExt, SpatialPlugin};
+pub use plugin::SpatialPlugin;
 pub use query::{SpatialQuery, TransformQuery};
 
 /// Most commonly used re-exported types.
 pub mod prelude {
-    pub use super::{EntityCommandsExt, EntityWorldMutExt, SpatialPlugin, TransformQuery};
+    pub use super::{SpatialPlugin, TransformQuery};
 }
