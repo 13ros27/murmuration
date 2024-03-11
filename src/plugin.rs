@@ -50,25 +50,54 @@ impl<P: Component + Point> Plugin for SpatialPlugin<P> {
         // Add an entity to the spatial grid when P gets added to it
         app.world.observer(
             |observer: Observer<OnAdd, P>,
+             mut commands: Commands,
              query: Query<&P>,
              mut spatial: ResMut<SpatialGrid<P>>| {
                 let entity = observer.source();
                 let point = query.get(entity).unwrap();
                 spatial.add(entity, point);
+                commands
+                    .entity(entity)
+                    .try_insert(OldPosition(point.clone()));
+            },
+        );
+        // Add an entity to the spatial grid if P gets inserted to it and wasn't already there,
+        // otherwise move the entity to its new position in the grid and update OldPosition.
+        app.world.observer(
+            |observer: Observer<OnInsert, P>,
+             mut commands: Commands,
+             mut query: Query<(&P, Option<&mut OldPosition<P>>)>,
+             mut spatial: ResMut<SpatialGrid<P>>| {
+                let entity = observer.source();
+                let (point, old_point) = query.get_mut(entity).unwrap();
+                if let Some(mut old_point) = old_point {
+                    spatial.move_entity(entity, &old_point.0, point);
+                    *old_point = OldPosition(point.clone());
+                } else {
+                    spatial.add(entity, point);
+                    commands
+                        .entity(entity)
+                        .try_insert(OldPosition(point.clone()));
+                }
             },
         );
         // Remove an entity from the spatial grid when P gets removed from it (or it is despawned)
         app.world.observer(
             |observer: Observer<OnRemove, P>,
+             mut commands: Commands,
              query: Query<&P>,
              mut spatial: ResMut<SpatialGrid<P>>| {
                 let entity = observer.source();
                 let point = query.get(entity).unwrap();
                 spatial.remove(entity, point);
+                commands.entity(entity).remove::<OldPosition<P>>();
             },
         );
     }
 }
+
+#[derive(Component)]
+struct OldPosition<P: Point>(P);
 
 /// Exposes the [`move_to`](Self::move_to) method on [`EntityWorldMut`](EntityWorldMut).
 pub trait EntityWorldMutExt {
@@ -82,17 +111,21 @@ pub trait EntityWorldMutExt {
 
 impl EntityWorldMutExt for EntityWorldMut<'_> {
     fn move_to<P: Component + Point + Send + Sync + 'static>(&mut self, new_point: &P) {
-        let point = if let Some(mut point) = self.get_mut() {
+        if let Some(mut point) = self.get_mut() {
             *point = new_point.clone();
-            point.clone()
         } else {
+            warn!("Tried to use move_to on an entity that doesn't have that component");
             return;
         };
+        // Update OldPosition to the new position
+        let old_point = &mut self.get_mut::<OldPosition<P>>().unwrap().0;
+        let old_position = old_point.clone();
+        *old_point = new_point.clone();
 
         let entity = self.id();
         self.world_scope(|w| {
             if let Some(mut spatial) = w.get_resource_mut::<SpatialGrid<P>>() {
-                spatial.move_entity(entity, &point, new_point);
+                spatial.move_entity(entity, &old_position, new_point);
             } else {
                 warn!("Tried to move a non-spatial component using `move_to`");
             }

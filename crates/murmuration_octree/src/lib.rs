@@ -87,6 +87,7 @@ impl<D, P: Point> Octree<D, P> {
         Self::default()
     }
 
+    /// Returns the number of branches currently in the tree (will typically be around 2 * items)
     pub fn num_branches(&self) -> usize {
         self.branches.len()
     }
