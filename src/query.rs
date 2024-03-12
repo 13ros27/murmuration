@@ -33,7 +33,6 @@ where
 impl<'w, 's, P, D, F> SpatialQuery<'w, 's, P, D, F>
 where
     P: Component + Point,
-    P::Data: Send + Sync,
     D: QueryData,
     F: QueryFilter,
 {
@@ -201,7 +200,6 @@ type SpatialQuerySet<P, D, F> = (
 unsafe impl<P, D, F> SystemParam for SpatialQuery<'_, '_, P, D, F>
 where
     P: Component + Point + 'static,
-    P::Data: Send + Sync,
     D: QueryData + 'static,
     F: QueryFilter + 'static,
 {

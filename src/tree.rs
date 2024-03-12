@@ -16,11 +16,7 @@ impl<P: Component + Point> Default for SpatialTree<P> {
     }
 }
 
-impl<P> SpatialTree<P>
-where
-    P: Component + Point,
-    P::Data: Send + Sync,
-{
+impl<P: Component + Point> SpatialTree<P> {
     pub(crate) fn add(&mut self, entity: Entity, point: &P) {
         self.0.add(point, entity);
     }

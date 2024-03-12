@@ -17,37 +17,23 @@ use crate::SpatialTree;
 /// # use murmuration::SpatialPlugin;
 /// App::new().add_plugins((DefaultPlugins, SpatialPlugin::<Transform>::new()));
 /// ```
-pub struct SpatialPlugin<P: Component + Point>(PhantomData<P>)
-where
-    P::Data: Send + Sync;
+pub struct SpatialPlugin<P: Component + Point>(PhantomData<P>);
 
-impl<P> SpatialPlugin<P>
-where
-    P: Component + Point,
-    P::Data: Send + Sync,
-{
+impl<P: Component + Point> SpatialPlugin<P> {
     /// Create a new `SpatialPlugin<P>`
     pub fn new() -> Self {
         Self(PhantomData)
     }
 }
 
-impl<P> Default for SpatialPlugin<P>
-where
-    P: Component + Point,
-    P::Data: Send + Sync,
-{
+impl<P: Component + Point> Default for SpatialPlugin<P> {
     /// Create a new `SpatialPlugin<P>`
     fn default() -> Self {
         Self(PhantomData)
     }
 }
 
-impl<P> Plugin for SpatialPlugin<P>
-where
-    P: Component + Point,
-    P::Data: Send + Sync,
-{
+impl<P: Component + Point> Plugin for SpatialPlugin<P> {
     fn build(&self, app: &mut App) {
         // This is required to fulfil the safety invariants for SpatialMutIter
         assert!(
