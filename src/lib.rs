@@ -55,11 +55,14 @@ mod plugin;
 mod query;
 mod tree;
 
-pub use plugin::{OldPosition, SpatialPlugin};
+pub use plugin::{SpatialPlugin, WorldExt};
 pub use query::{SpatialQuery, TransformQuery};
 pub use tree::SpatialTree;
 
+#[doc(hidden)] // This is only public for `SpatialTree::update_tree`
+pub use plugin::OldPosition;
+
 /// Most commonly used re-exported types.
 pub mod prelude {
-    pub use super::{SpatialPlugin, TransformQuery};
+    pub use super::{SpatialPlugin, TransformQuery, WorldExt};
 }
