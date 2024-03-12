@@ -3,15 +3,13 @@ use slab::Slab;
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
 
-use point::PointData;
-
 mod add;
 mod get;
 mod impls;
 mod point;
 mod remove;
 
-pub use point::{ordered::OrderedBinary, Point};
+pub use point::{ordered::OrderedBinary, Point, PointData};
 
 pub struct Octree<D, P: Point> {
     branches: Slab<Branch<D, P>>,
@@ -95,7 +93,16 @@ impl<D, P: Point> Octree<D, P> {
 
 impl<D: PartialEq, P: Point> Octree<D, P> {
     pub fn move_data(&mut self, old_point: &P, new_point: &P, data: D) -> bool {
-        if let Ok((leaf, parents)) = self.get_leaf_parents(&old_point.get_point()) {
+        self.move_data_int(&old_point.get_point(), new_point.get_point(), data)
+    }
+
+    pub fn move_data_int(
+        &mut self,
+        old_point: &PointData<P>,
+        new_point: PointData<P>,
+        data: D,
+    ) -> bool {
+        if let Ok((leaf, parents)) = self.get_leaf_parents(&old_point) {
             if let Branch::Leaf {
                 child,
                 data: leaf_data,
@@ -118,8 +125,7 @@ impl<D: PartialEq, P: Point> Octree<D, P> {
                                 Branch::Leaf { .. } => unreachable!(),
                             }
                         }
-                        let shared =
-                            (&old_point.get_point() ^ &new_point.get_point()).leading_zeros();
+                        let shared = (old_point ^ &new_point).leading_zeros();
                         shared >= depth
                     };
 
@@ -127,14 +133,14 @@ impl<D: PartialEq, P: Point> Octree<D, P> {
                         let Branch::Leaf { point, .. } = self.get_branch_mut(leaf) else {
                             unreachable!()
                         };
-                        *point = new_point.get_point();
+                        *point = new_point;
                         return true;
                     }
                 }
             }
 
             if self.remove_from_parent_chain(leaf, parents, &data) {
-                self.add(new_point, data);
+                self.add_int(new_point, data);
                 return true;
             }
         }

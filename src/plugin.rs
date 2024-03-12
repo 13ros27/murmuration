@@ -1,6 +1,6 @@
 use bevy_app::{App, Plugin};
 use bevy_ecs::prelude::*;
-use murmuration_octree::Point;
+use murmuration_octree::{Point, PointData};
 use std::marker::PhantomData;
 
 use crate::SpatialTree;
@@ -17,23 +17,37 @@ use crate::SpatialTree;
 /// # use murmuration::SpatialPlugin;
 /// App::new().add_plugins((DefaultPlugins, SpatialPlugin::<Transform>::new()));
 /// ```
-pub struct SpatialPlugin<P: Component + Point>(PhantomData<P>);
+pub struct SpatialPlugin<P: Component + Point>(PhantomData<P>)
+where
+    P::Data: Send + Sync;
 
-impl<P: Component + Point> SpatialPlugin<P> {
+impl<P> SpatialPlugin<P>
+where
+    P: Component + Point,
+    P::Data: Send + Sync,
+{
     /// Create a new `SpatialPlugin<P>`
     pub fn new() -> Self {
         Self(PhantomData)
     }
 }
 
-impl<P: Component + Point> Default for SpatialPlugin<P> {
+impl<P> Default for SpatialPlugin<P>
+where
+    P: Component + Point,
+    P::Data: Send + Sync,
+{
     /// Create a new `SpatialPlugin<P>`
     fn default() -> Self {
         Self(PhantomData)
     }
 }
 
-impl<P: Component + Point> Plugin for SpatialPlugin<P> {
+impl<P> Plugin for SpatialPlugin<P>
+where
+    P: Component + Point,
+    P::Data: Send + Sync,
+{
     fn build(&self, app: &mut App) {
         // This is required to fulfil the safety invariants for SpatialMutIter
         assert!(
@@ -54,7 +68,7 @@ impl<P: Component + Point> Plugin for SpatialPlugin<P> {
                 spatial.add(entity, point);
                 commands
                     .entity(entity)
-                    .try_insert(OldPosition(point.clone()));
+                    .try_insert(OldPosition(point.get_point()));
             },
         );
         // Add an entity to the spatial tree if P gets inserted to it and wasn't already there,
@@ -67,13 +81,13 @@ impl<P: Component + Point> Plugin for SpatialPlugin<P> {
                 let entity = observer.source();
                 let (point, old_point) = query.get_mut(entity).unwrap();
                 if let Some(mut old_point) = old_point {
-                    spatial.move_entity(entity, &old_point.0, point);
-                    *old_point = OldPosition(point.clone());
+                    spatial.move_entity(entity, &old_point.0, point.get_point());
+                    *old_point = OldPosition(point.get_point());
                 } else {
                     spatial.add(entity, point);
                     commands
                         .entity(entity)
-                        .try_insert(OldPosition(point.clone()));
+                        .try_insert(OldPosition(point.get_point()));
                 }
             },
         );
@@ -97,4 +111,4 @@ impl<P: Component + Point> Plugin for SpatialPlugin<P> {
 /// This is publicly visible so that it can be used in [`SpatialTree::update_tree`].
 #[derive(Component, Debug)]
 #[doc(hidden)]
-pub struct OldPosition<P: Point>(pub(crate) P);
+pub struct OldPosition<P: Point>(pub(crate) PointData<P>);

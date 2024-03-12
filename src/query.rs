@@ -33,6 +33,7 @@ where
 impl<'w, 's, P, D, F> SpatialQuery<'w, 's, P, D, F>
 where
     P: Component + Point,
+    P::Data: Send + Sync,
     D: QueryData,
     F: QueryFilter,
 {
@@ -190,7 +191,7 @@ type SpatialQuerySet<P, D, F> = (
             Query<
                 'static,
                 'static,
-                (Entity, Ref<'static, P>, &'static mut OldPosition<P>),
+                (Entity, &'static P, &'static mut OldPosition<P>),
                 (Filter<D>, F),
             >,
         ),
@@ -200,6 +201,7 @@ type SpatialQuerySet<P, D, F> = (
 unsafe impl<P, D, F> SystemParam for SpatialQuery<'_, '_, P, D, F>
 where
     P: Component + Point + 'static,
+    P::Data: Send + Sync,
     D: QueryData + 'static,
     F: QueryFilter + 'static,
 {
@@ -227,13 +229,12 @@ where
 
         // Find any updated positions and update them in the tree
         let mut query = param_set.p1();
-        for (entity, position, mut old_position) in query.iter_mut().filter(|(_, p, o)| {
-            !o.last_changed()
-                .is_newer_than(p.last_changed(), change_tick)
-        }) {
-            // TODO: It may also be worth checking if the position has actually changed here (maybe instead of change ticks?)
-            tree.move_entity(entity, &old_position.0, &position);
-            *old_position = OldPosition(position.clone());
+        for (entity, position, mut old_position) in &mut query {
+            let pos_data = position.get_point();
+            if pos_data != old_position.0 {
+                tree.move_entity(entity, &old_position.0, pos_data.clone());
+                *old_position = OldPosition(pos_data);
+            }
         }
 
         // I believe this is sound because it is just working around how ParamSet uses a unique reference

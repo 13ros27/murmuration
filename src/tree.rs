@@ -1,5 +1,5 @@
 use bevy_ecs::prelude::*;
-use murmuration_octree::{Octree, Point};
+use murmuration_octree::{Octree, Point, PointData};
 
 use crate::{ecs_utils::into_query::IntoQuery, plugin::OldPosition};
 
@@ -16,7 +16,11 @@ impl<P: Component + Point> Default for SpatialTree<P> {
     }
 }
 
-impl<P: Component + Point> SpatialTree<P> {
+impl<P> SpatialTree<P>
+where
+    P: Component + Point,
+    P::Data: Send + Sync,
+{
     pub(crate) fn add(&mut self, entity: Entity, point: &P) {
         self.0.add(point, entity);
     }
@@ -25,8 +29,13 @@ impl<P: Component + Point> SpatialTree<P> {
         self.0.remove(point, &entity)
     }
 
-    pub(crate) fn move_entity(&mut self, entity: Entity, old_point: &P, new_point: &P) -> bool {
-        self.0.move_data(old_point, new_point, entity)
+    pub(crate) fn move_entity(
+        &mut self,
+        entity: Entity,
+        old_point: &PointData<P>,
+        new_point: PointData<P>,
+    ) -> bool {
+        self.0.move_data_int(old_point, new_point, entity)
     }
 
     /// Returns the entity at the given point or `None` if there is nothing there.
@@ -105,9 +114,10 @@ impl<P: Component + Point> SpatialTree<P> {
     ) {
         let mut lens = query.transmute_lens();
         for (entity, position, mut old_position) in &mut lens.query() {
-            if *position != old_position.0 {
-                self.move_entity(entity, &old_position.0, position);
-                *old_position = OldPosition(position.clone());
+            let pos_data = position.get_point();
+            if pos_data != old_position.0 {
+                self.move_entity(entity, &old_position.0, pos_data.clone());
+                *old_position = OldPosition(pos_data);
             }
         }
     }

@@ -128,7 +128,7 @@ impl<P: Point> BitXor for &PointData<P> {
     }
 }
 
-pub trait Point: Clone + PartialEq + Sized {
+pub trait Point: Clone + Sized {
     type Data: OrderedBinary;
     fn to_array(&self) -> [Self::Data; 3];
     fn get_point(&self) -> PointData<Self> {
