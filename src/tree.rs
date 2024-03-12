@@ -7,6 +7,11 @@ use crate::{ecs_utils::into_query::IntoQuery, plugin::OldPosition};
 ///
 /// Created by [`SpatialPlugin`](crate::SpatialPlugin) this can be used to directly get the entities
 /// for a particular spatial query rather than going through [`SpatialQuery`](crate::SpatialQuery).
+///
+/// While [`SpatialQuery`](crate::SpatialQuery) will automatically update the spatial tree with any
+/// relevant changes, it will only update those relevant to its exact query, so you may need to
+/// update the tree with accurate information before using this to query it, either with
+/// [`SpatialTree::update_tree`] or [`World::update_tree`](crate::WorldExt::update_tree).
 #[derive(Resource)]
 pub struct SpatialTree<P: Component + Point>(Octree<Entity, P>);
 
