@@ -26,7 +26,8 @@ impl<P: Point> Debug for PointData<P> {
 }
 
 impl<P: Point> PointData<P> {
-    pub(crate) const ZERO: Self = Self([<P::Data as OrderedBinary>::Ordered::ZERO; 3]);
+    pub(crate) const ZERO: Self =
+        Self([<<P::Data as OrderedBinary>::Ordered as OrderedBinary>::ZERO; 3]);
 
     pub fn new(data: [<P::Data as OrderedBinary>::Ordered; 3]) -> Self {
         Self(data)

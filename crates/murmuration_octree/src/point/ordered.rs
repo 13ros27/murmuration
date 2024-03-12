@@ -21,58 +21,20 @@ pub trait OrderedBinary:
     }
 }
 
-impl OrderedBinary for u16 {
-    const ZERO: u16 = 0;
-    type Ordered = u16;
-    fn to_ordered(&self) -> u16 {
+impl<U: Unsigned> OrderedBinary for U {
+    const ZERO: Self = Self::ZERO;
+    type Ordered = Self;
+    fn to_ordered(&self) -> Self {
         *self
     }
-    fn from_ordered(ordered: u16) -> Self {
+    fn from_ordered(ordered: Self) -> Self {
         ordered
     }
-    fn distance_squared(&self, other: &u16) -> u16 {
+    fn distance_squared(&self, other: &Self) -> Self {
         let dist = if self > other {
-            self - other
+            *self - *other
         } else {
-            other - self
-        };
-        dist * dist
-    }
-}
-
-impl OrderedBinary for u32 {
-    const ZERO: u32 = 0;
-    type Ordered = u32;
-    fn to_ordered(&self) -> u32 {
-        *self
-    }
-    fn from_ordered(ordered: u32) -> Self {
-        ordered
-    }
-    fn distance_squared(&self, other: &u32) -> u32 {
-        let dist = if self > other {
-            self - other
-        } else {
-            other - self
-        };
-        dist * dist
-    }
-}
-
-impl OrderedBinary for u64 {
-    const ZERO: u64 = 0;
-    type Ordered = u64;
-    fn to_ordered(&self) -> u64 {
-        *self
-    }
-    fn from_ordered(ordered: u64) -> Self {
-        ordered
-    }
-    fn distance_squared(&self, other: &u64) -> u64 {
-        let dist = if self > other {
-            self - other
-        } else {
-            other - self
+            *other - *self
         };
         dist * dist
     }

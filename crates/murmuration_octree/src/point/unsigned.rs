@@ -1,6 +1,6 @@
 use std::fmt::{Binary, Debug};
 use std::hash::Hash;
-use std::ops::{BitAnd, BitOr, BitXor, Shl, Shr};
+use std::ops::{Add, BitAnd, BitOr, BitXor, Mul, Shl, Shr, Sub};
 
 mod sealed {
     pub trait Sealed {}
@@ -19,6 +19,9 @@ pub trait Unsigned:
     + BitXor<Output = Self>
     + Shl<u8, Output = Self>
     + Shr<u8, Output = Self>
+    + Add<Output = Self>
+    + Sub<Output = Self>
+    + Mul<Output = Self>
     + From<u8>
     + TryInto<u8>
     + Copy
