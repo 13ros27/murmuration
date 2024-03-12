@@ -24,7 +24,7 @@
 //!     App::new()
 //!         .add_plugins((DefaultPlugins, SpatialPlugin::<Transform>::new()))
 //!         .add_systems(Startup, setup)
-//!         .add_systems(Update, (move_player, print_nearby));
+//!         .add_systems(Update, (move_player, print_nearby).chain());
 //! }
 //!
 //! fn setup(mut commands: Commands) {

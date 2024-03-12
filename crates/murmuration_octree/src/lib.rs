@@ -102,7 +102,7 @@ impl<D: PartialEq, P: Point> Octree<D, P> {
         new_point: PointData<P>,
         data: D,
     ) -> bool {
-        if let Ok((leaf, parents)) = self.get_leaf_parents(&old_point) {
+        if let Ok((leaf, parents)) = self.get_leaf_parents(old_point) {
             if let Branch::Leaf {
                 child,
                 data: leaf_data,
