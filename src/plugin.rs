@@ -111,29 +111,3 @@ impl<P: Component + Point, F: sealed::OptComponent> Plugin for SpatialPlugin<P, 
 #[derive(Component, Debug)]
 #[doc(hidden)]
 pub struct OldPosition<P: Point>(pub(crate) PointData<P>);
-
-/// Exposes the [`update_tree`](Self::update_tree) method on [`&mut World`](World).
-pub trait WorldExt {
-    /// Updates the spatial tree for P with any changes since it was last updated.
-    ///
-    /// For more details see [`SpatialTree::update_tree`] although this doesn't allow filtering,
-    /// instead just updating all entities with the component P.
-    fn update_tree<P: Component + Point>(&mut self);
-}
-
-impl WorldExt for World {
-    fn update_tree<P: Component + Point>(&mut self) {
-        self.resource_scope(|world, mut tree: Mut<SpatialTree<P>>| {
-            for (entity, position, mut old_position) in world
-                .query::<(Entity, &P, &mut OldPosition<P>)>()
-                .iter_mut(world)
-            {
-                let pos_data = position.get_point();
-                if pos_data != old_position.0 {
-                    tree.move_entity(entity, &old_position.0, pos_data.clone());
-                    *old_position = OldPosition(pos_data);
-                }
-            }
-        });
-    }
-}
