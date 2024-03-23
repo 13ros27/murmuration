@@ -66,3 +66,15 @@ pub use plugin::OldPosition;
 pub mod prelude {
     pub use super::{SpatialPlugin, TransformQuery, WorldExt};
 }
+
+/// A system for updating the spatial tree with all changes since it was last updated.
+///
+/// This is useful when manually using [`Res<SpatialTree>`](SpatialTree) as that won't do the update
+/// for you, [`SpatialQuery`] doesn't need this.
+///
+/// See also: [`World::update_tree`](WorldExt::update_tree)
+pub fn update_spatial_tree<P: bevy_ecs::prelude::Component + murmuration_octree::Point>(
+    world: &mut bevy_ecs::prelude::World,
+) {
+    world.update_tree::<P>();
+}
