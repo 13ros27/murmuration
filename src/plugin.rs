@@ -5,6 +5,24 @@ use std::marker::PhantomData;
 
 use crate::SpatialTree;
 
+mod sealed {
+    use bevy_ecs::{prelude::*, query::QueryFilter};
+
+    pub trait OptComponent: Send + Sync + 'static {
+        type Bundle<P: Component>: Bundle;
+        type QueryFilter: QueryFilter;
+    }
+    pub struct NoFilter;
+    impl OptComponent for NoFilter {
+        type Bundle<P: Component> = P;
+        type QueryFilter = ();
+    }
+    impl<C: Component> OptComponent for C {
+        type Bundle<P: Component> = (P, C);
+        type QueryFilter = With<C>;
+    }
+}
+
 /// Plugin for setting up a spatial tree tracking the component `P`.
 ///
 /// This is typically used to track `Transform` with `SpatialPlugin::<Transform>::new()`, and
@@ -17,23 +35,28 @@ use crate::SpatialTree;
 /// # use murmuration::SpatialPlugin;
 /// App::new().add_plugins((DefaultPlugins, SpatialPlugin::<Transform>::new()));
 /// ```
-pub struct SpatialPlugin<P: Component + Point>(PhantomData<P>);
+///
+/// You can also add a filter component with the `F` generic, in which case this will only add
+/// entities with that component to the [`SpatialTree`].
+pub struct SpatialPlugin<P: Component + Point, F: sealed::OptComponent = sealed::NoFilter>(
+    PhantomData<(P, F)>,
+);
 
-impl<P: Component + Point> SpatialPlugin<P> {
-    /// Create a new `SpatialPlugin<P>`
+impl<P: Component + Point, F: sealed::OptComponent> SpatialPlugin<P, F> {
+    /// Create a new `SpatialPlugin<P, F>`
     pub fn new() -> Self {
         Self(PhantomData)
     }
 }
 
-impl<P: Component + Point> Default for SpatialPlugin<P> {
-    /// Create a new `SpatialPlugin<P>`
+impl<P: Component + Point, F: sealed::OptComponent> Default for SpatialPlugin<P, F> {
+    /// Create a new `SpatialPlugin<P, F>`
     fn default() -> Self {
         Self(PhantomData)
     }
 }
 
-impl<P: Component + Point> Plugin for SpatialPlugin<P> {
+impl<P: Component + Point, F: sealed::OptComponent> Plugin for SpatialPlugin<P, F> {
     fn build(&self, app: &mut App) {
         // This is required to fulfil the safety invariants for SpatialMutIter
         assert!(
@@ -43,50 +66,40 @@ impl<P: Component + Point> Plugin for SpatialPlugin<P> {
         );
         app.init_resource::<SpatialTree<P>>();
 
-        // Add an entity to the spatial tree when P gets added to it
-        app.world.observer(
-            |observer: Observer<OnAdd, P>,
-             mut commands: Commands,
-             query: Query<&P>,
-             mut spatial: ResMut<SpatialTree<P>>| {
-                let entity = observer.source();
-                let point = query.get(entity).unwrap();
-                spatial.add(entity, point);
-                commands
-                    .entity(entity)
-                    .try_insert(OldPosition(point.get_point()));
-            },
-        );
         // Add an entity to the spatial tree if P gets inserted to it and wasn't already there,
-        // otherwise move the entity to its new position in the tree and update OldPosition.
+        //  otherwise move the entity to its new position in the tree and update OldPosition.
+        // This will also trigger if F is changed (despite it just being a filter) but if we move
+        //  that to an OnAdd observer to prevent this we can get duplicate entities in the tree.
         app.world.observer(
-            |observer: Observer<OnInsert, P>,
+            |observer: Observer<OnInsert, F::Bundle<P>>,
              mut commands: Commands,
-             mut query: Query<(&P, Option<&mut OldPosition<P>>)>,
+             mut query: Query<(&P, Option<&mut OldPosition<P>>), F::QueryFilter>,
              mut spatial: ResMut<SpatialTree<P>>| {
                 let entity = observer.source();
-                let (point, old_point) = query.get_mut(entity).unwrap();
-                if let Some(mut old_point) = old_point {
-                    spatial.move_entity(entity, &old_point.0, point.get_point());
-                    *old_point = OldPosition(point.get_point());
-                } else {
-                    spatial.add(entity, point);
-                    commands
-                        .entity(entity)
-                        .try_insert(OldPosition(point.get_point()));
+                if let Ok((point, old_point)) = query.get_mut(entity) {
+                    if let Some(mut old_point) = old_point {
+                        spatial.move_entity(entity, &old_point.0, point.get_point());
+                        *old_point = OldPosition(point.get_point());
+                    } else {
+                        spatial.add(entity, point);
+                        commands
+                            .entity(entity)
+                            .try_insert(OldPosition(point.get_point()));
+                    }
                 }
             },
         );
         // Remove an entity from the spatial tree when P gets removed from it (or it is despawned)
         app.world.observer(
-            |observer: Observer<OnRemove, P>,
+            |observer: Observer<OnRemove, F::Bundle<P>>,
              mut commands: Commands,
-             query: Query<&P>,
+             query: Query<&P, F::QueryFilter>,
              mut spatial: ResMut<SpatialTree<P>>| {
                 let entity = observer.source();
-                let point = query.get(entity).unwrap();
-                spatial.remove(entity, point);
-                commands.entity(entity).remove::<OldPosition<P>>();
+                if let Ok(point) = query.get(entity) {
+                    spatial.remove(entity, point);
+                    commands.entity(entity).remove::<OldPosition<P>>();
+                }
             },
         );
     }
