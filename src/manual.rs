@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use murmuration_octree::Point;
 
-use crate::{OldPosition, SpatialQuery, SpatialTree};
+use crate::{OldPosition, SpatialTree};
 
 /// Exposes the [`update_tree`](Self::update_tree) method on [`&mut World`](World).
 pub trait WorldExt {
@@ -32,7 +32,7 @@ impl WorldExt for World {
 /// A system for updating the spatial tree with all changes since it was last updated.
 ///
 /// This is useful when manually using [`Res<SpatialTree>`](SpatialTree) as that won't do the update
-/// for you, [`SpatialQuery`] doesn't need this.
+/// for you, [`SpatialQuery`](crate::SpatialQuery) doesn't need this.
 ///
 /// See also: [`World::update_tree`](WorldExt::update_tree)
 pub fn update_spatial_tree<P: Component + Point>(world: &mut World) {

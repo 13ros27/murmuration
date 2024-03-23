@@ -1,16 +1,21 @@
 use bevy_ecs::{
-    archetype::Archetype,
-    component::Tick,
     prelude::*,
     query::{QueryData, QueryFilter, ROQueryItem},
-    system::{SystemMeta, SystemParam},
-    world::unsafe_world_cell::UnsafeWorldCell,
+    system::SystemParam,
 };
 use bevy_transform::components::Transform;
 use murmuration_octree::Point;
 
-use crate::ecs_utils::filter::Filter;
-use crate::{mut_iter::SpatialMutIter, plugin::OldPosition, SpatialTree};
+#[cfg(feature = "change_detection")]
+use {
+    crate::{ecs_utils::filter::Filter, plugin::OldPosition},
+    bevy_ecs::{
+        archetype::Archetype, component::Tick, system::SystemMeta,
+        world::unsafe_world_cell::UnsafeWorldCell,
+    },
+};
+
+use crate::{mut_iter::SpatialMutIter, SpatialTree};
 
 /// An alias for `SpatialQuery<Transform, ..>`
 pub type TransformQuery<'w, 's, D, F = ()> = SpatialQuery<'w, 's, Transform, D, F>;
@@ -20,6 +25,7 @@ pub type TransformQuery<'w, 's, D, F = ()> = SpatialQuery<'w, 's, Transform, D, 
 /// The first generic specifies what type the spatial tree is defined over and is autofilled to
 /// [`Transform`](`bevy_transform::prelude::Transform`) by [`TransformQuery`]. The other two are the
 /// same as the data and filter types on [`Query`](`bevy_ecs::prelude::Query`).
+#[cfg_attr(not(feature = "change_detection"), derive(SystemParam))]
 pub struct SpatialQuery<'w, 's, P, D, F = ()>
 where
     P: Component + Point + 'static,
@@ -180,6 +186,7 @@ where
     }
 }
 
+#[cfg(feature = "change_detection")]
 type SpatialQuerySet<P, D, F> = (
     ResMut<'static, SpatialTree<P>>,
     ParamSet<
@@ -197,6 +204,7 @@ type SpatialQuerySet<P, D, F> = (
     >,
 );
 
+#[cfg(feature = "change_detection")]
 unsafe impl<P, D, F> SystemParam for SpatialQuery<'_, '_, P, D, F>
 where
     P: Component + Point + 'static,
