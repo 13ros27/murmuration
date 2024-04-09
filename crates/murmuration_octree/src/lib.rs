@@ -8,6 +8,7 @@ mod get;
 mod impls;
 mod point;
 mod remove;
+mod within;
 
 pub use point::{ordered::OrderedBinary, Point, PointData};
 
