@@ -26,11 +26,13 @@ impl<'a, D, P: Point> Iterator for GetIter<'a, D, P> {
 impl<D, P: Point> FusedIterator for GetIter<'_, D, P> {}
 
 impl<D, P: Point> Octree<D, P> {
+    /// Returns all items at the given `point`.
     pub fn get(&self, point: &P) -> impl Iterator<Item = &D> {
         let leaf = self.get_leaf(&point.get_point());
         GetIter { octree: self, leaf }
     }
 
+    /// Returns one of the items at the given `point` or `None` if there aren't any.
     pub fn get_single(&self, point: &P) -> Option<&D> {
         self.get(point).next()
     }

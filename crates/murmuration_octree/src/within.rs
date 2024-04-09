@@ -83,6 +83,7 @@ impl<'a, D, P: Point> Iterator for Within<'a, D, P> {
 impl<D, P: Point> FusedIterator for Within<'_, D, P> {}
 
 impl<D, P: Point> Octree<D, P> {
+    /// Returns all items within `distance` of `point`, in an unspecified order.
     pub fn within(&self, point: &P, distance: P::Data) -> impl Iterator<Item = &D> {
         let root = self
             .root

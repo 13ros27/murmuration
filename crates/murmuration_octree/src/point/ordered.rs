@@ -1,21 +1,28 @@
 use super::unsigned::Unsigned;
 use std::ops::{Add, Mul, Sub};
 
+/// A number which can be used as the coordinate for each axis in an [`Octree`].
+///
+/// This converts the number into an unsigned integer such that binary ordering will accurately order them.
 pub trait OrderedBinary:
     Clone + PartialEq + PartialOrd + Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self>
 {
+    /// A generic constant for the number `0`.
     const ZERO: Self;
+    /// The unsigned integer this type will be converted to and from with the *_ordered methods.
     type Ordered: Unsigned;
+    /// Converts this number into its ordered format.
     fn to_ordered(&self) -> Self::Ordered;
+    /// Converts from an ordered format back into `Self`.
     fn from_ordered(ordered: Self::Ordered) -> Self;
 
-    /// This should be overridden for unsigned types
+    /// This should be overridden for unsigned types (because they can't do naive subtraction).
     fn distance_squared(&self, other: &Self) -> Self {
         let dist = self.clone() - other.clone();
         dist.clone() * dist
     }
 
-    /// Used to filter out NaNs from floats, should probably find a better solution
+    /// Used to filter out NaNs from floats, this simply means that no filtering should be done based on this number.
     fn is_irrelevant(&self) -> bool {
         false
     }

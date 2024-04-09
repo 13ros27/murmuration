@@ -1,3 +1,16 @@
+#![forbid(missing_docs)]
+#![warn(clippy::pedantic)]
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::module_name_repetitions,
+    clippy::must_use_candidate,
+    clippy::return_self_not_must_use
+)]
+//! An [Octree](https://en.wikipedia.org/wiki/Octree) implementation for efficient spatial queries.
+//!
+//! This is designed to be reasonably memory efficient by skipping multiple layers of the tree where there is
+//! no branching, and will typically (provided the data `D` is fairly small) take approximately 80 bytes per
+//! stored item.
 use nonmax::NonMaxU32;
 use slab::Slab;
 use std::collections::BTreeMap;
@@ -12,6 +25,7 @@ mod within;
 
 pub use point::{ordered::OrderedBinary, Point, PointData};
 
+/// A 3D tree which stores items of type `D` so that they can be efficiently queried by location (`P`).
 pub struct Octree<D, P: Point> {
     branches: Slab<Branch<D, P>>,
     root: Option<BranchKey>,
@@ -82,6 +96,7 @@ impl<D, P: Point> Octree<D, P> {
         self.branches.remove(key as usize);
     }
 
+    /// Returns a new empty `Octree`.
     pub fn new() -> Self {
         Self::default()
     }
@@ -93,11 +108,13 @@ impl<D, P: Point> Octree<D, P> {
 }
 
 impl<D: PartialEq, P: Point> Octree<D, P> {
+    /// Move the given `data` from `old_point` to `new_point`, returning `true` if it existed at `old_point`.
     pub fn move_data(&mut self, old_point: &P, new_point: &P, data: D) -> bool {
-        self.move_data_int(&old_point.get_point(), new_point.get_point(), data)
+        self.move_data_internal(&old_point.get_point(), new_point.get_point(), data)
     }
 
-    pub fn move_data_int(
+    /// Like [`move_data`], except this takes the underlying `PointData` for if you have already converted it.
+    pub fn move_data_internal(
         &mut self,
         old_point: &PointData<P>,
         new_point: PointData<P>,

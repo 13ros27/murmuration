@@ -7,6 +7,7 @@ use super::{
 };
 
 impl<D: PartialEq, P: Point> Octree<D, P> {
+    /// Removes the given `data` from `point` in the tree if it exists, otherwise returns `false`.
     pub fn remove(&mut self, point: &P, data: &D) -> bool {
         let point = point.get_point();
         if let Ok((leaf, parents)) = self.get_leaf_parents(&point) {

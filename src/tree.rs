@@ -36,7 +36,7 @@ impl<P: Component + Point> SpatialTree<P> {
         old_point: &PointData<P>,
         new_point: PointData<P>,
     ) -> bool {
-        self.0.move_data_int(old_point, new_point, entity)
+        self.0.move_data_internal(old_point, new_point, entity)
     }
 
     /// Returns the entity at the given point or `None` if there is nothing there.

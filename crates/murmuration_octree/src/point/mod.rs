@@ -8,8 +8,9 @@ use std::ops::BitXor;
 use ordered::OrderedBinary;
 use unsigned::Unsigned;
 
+/// The underlying ordered type used for positioning in the [`Octree`].
 #[derive(Clone, Eq, PartialOrd, Ord)]
-pub struct PointData<P: Point>([<P::Data as OrderedBinary>::Ordered; 3]);
+pub struct PointData<P: Point>(pub [<P::Data as OrderedBinary>::Ordered; 3]);
 
 impl<P: Point> PartialEq for PointData<P> {
     fn eq(&self, other: &Self) -> bool {
@@ -28,10 +29,6 @@ impl<P: Point> Debug for PointData<P> {
 impl<P: Point> PointData<P> {
     pub(crate) const ZERO: Self =
         Self([<<P::Data as OrderedBinary>::Ordered as OrderedBinary>::ZERO; 3]);
-
-    pub fn new(data: [<P::Data as OrderedBinary>::Ordered; 3]) -> Self {
-        Self(data)
-    }
 
     pub(crate) fn cross_or(&self) -> <P::Data as OrderedBinary>::Ordered {
         self.0[0] | self.0[1] | self.0[2]
@@ -129,9 +126,13 @@ impl<P: Point> BitXor for &PointData<P> {
     }
 }
 
+/// A type which can be used as the coordinate system in an [`Octree`].
 pub trait Point: Clone + Sized {
+    /// The underlying coordinate number type it uses.
     type Data: OrderedBinary;
+    /// Returns the data stored in this point.
     fn to_array(&self) -> [Self::Data; 3];
+    /// Converts the `Point` type into a `PointData` so that it can be used to index the [`Octree`].
     fn get_point(&self) -> PointData<Self> {
         let arr = self.to_array();
         PointData([
@@ -141,5 +142,6 @@ pub trait Point: Clone + Sized {
         ])
     }
 
+    /// The number of bits stored in this point's `Self::Data`.
     const MAX_DEPTH: u8 = (std::mem::size_of::<Self::Data>() * 8) as u8;
 }
