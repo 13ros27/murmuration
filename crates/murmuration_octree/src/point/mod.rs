@@ -8,7 +8,7 @@ use std::ops::BitXor;
 use ordered::OrderedBinary;
 use unsigned::Unsigned;
 
-/// The underlying ordered type used for positioning in the [`Octree`].
+/// The underlying ordered type used for positioning in the [`Octree`](crate::Octree).
 #[derive(Clone, Eq, PartialOrd, Ord)]
 pub struct PointData<P: Point>(pub [<P::Data as OrderedBinary>::Ordered; 3]);
 
@@ -126,13 +126,13 @@ impl<P: Point> BitXor for &PointData<P> {
     }
 }
 
-/// A type which can be used as the coordinate system in an [`Octree`].
+/// A type which can be used as the coordinate system in an [`Octree`](crate::Octree).
 pub trait Point: Clone + Sized {
     /// The underlying coordinate number type it uses.
     type Data: OrderedBinary;
     /// Returns the data stored in this point.
     fn to_array(&self) -> [Self::Data; 3];
-    /// Converts the `Point` type into a `PointData` so that it can be used to index the [`Octree`].
+    /// Converts the `Point` type into a `PointData` so that it can be used to index the [`Octree`](crate::Octree).
     fn get_point(&self) -> PointData<Self> {
         let arr = self.to_array();
         PointData([

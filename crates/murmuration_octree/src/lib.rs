@@ -9,7 +9,7 @@
 //! An [Octree](https://en.wikipedia.org/wiki/Octree) implementation for efficient spatial queries.
 //!
 //! This is designed to be reasonably memory efficient by skipping multiple layers of the tree where there is
-//! no branching, and will typically (provided the data `D` is fairly small) take approximately 80 bytes per
+//! no branching, and will typically (provided the data `D` is fairly small) take around 80 bytes per
 //! stored item.
 use nonmax::NonMaxU32;
 use slab::Slab;
@@ -113,7 +113,7 @@ impl<D: PartialEq, P: Point> Octree<D, P> {
         self.move_data_internal(&old_point.get_point(), new_point.get_point(), data)
     }
 
-    /// Like [`move_data`], except this takes the underlying `PointData` for if you have already converted it.
+    /// Like [`move_data`](Self::move_data), except this takes the underlying `PointData` for if you have already converted it.
     pub fn move_data_internal(
         &mut self,
         old_point: &PointData<P>,

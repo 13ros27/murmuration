@@ -1,7 +1,7 @@
 use super::unsigned::Unsigned;
 use std::ops::{Add, Mul, Sub};
 
-/// A number which can be used as the coordinate for each axis in an [`Octree`].
+/// A number which can be used as the coordinate for each axis in an [`Octree`](crate::Octree).
 ///
 /// This converts the number into an unsigned integer such that binary ordering will accurately order them.
 pub trait OrderedBinary:
