@@ -1,3 +1,5 @@
+use crate::{OrderedBinary, Point};
+
 #[cfg(feature = "bevy_transform")]
 mod bevy_transform {
     use crate::point::Point;
@@ -71,5 +73,12 @@ mod glam {
         fn to_array(&self) -> [i64; 3] {
             self.to_array()
         }
+    }
+}
+
+impl<N: OrderedBinary> Point for [N; 3] {
+    type Data = N;
+    fn to_array(&self) -> [N; 3] {
+        self.clone()
     }
 }
