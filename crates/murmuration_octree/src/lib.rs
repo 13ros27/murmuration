@@ -37,7 +37,7 @@ pub(crate) struct BranchKey(NonMaxU32);
 enum Branch<D, P: Point> {
     Split {
         children: [Option<BranchKey>; 8],
-        occupied: u8, // How many of the children are Some(_) (used for .remove).
+        occupied: u8, // Which children are Some (bitflags) (used for .remove).
         depth: u8,    // Equivalent to point_depth + 1 if there is a Skip above them
     },
     Skip {

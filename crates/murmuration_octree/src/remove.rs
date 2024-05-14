@@ -64,8 +64,9 @@ impl<D: PartialEq, P: Point> Octree<D, P> {
                         depth,
                     } => {
                         let ind = parent.ind.unwrap() as usize;
-                        *occupied &= 255 ^ (1 << ind);
-                        if occupied.count_ones() > 1 {
+                        *occupied &= 255 ^ (1_u8.wrapping_shl(ind as u32));
+                        // Equivalent to `occupied.count_ones() > 1`
+                        if (*occupied & (occupied.wrapping_sub(1))) != 0 {
                             children[ind] = None;
                             None
                         } else {

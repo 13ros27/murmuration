@@ -96,7 +96,7 @@ impl<D, P: Point> Octree<D, P> {
         children[dir2 as usize] = Some(child2);
         let split = self.add_branch(Branch::Split {
             children,
-            occupied: (1 << dir1) | (1 << dir2),
+            occupied: (1_u8.wrapping_shl(dir1 as u32)) | (1_u8.wrapping_shl(dir2 as u32)),
             depth: shared + 1,
         });
 
@@ -127,7 +127,7 @@ impl<D, P: Point> Octree<D, P> {
         else {
             unreachable!()
         };
-        *occupied |= 1 << ind;
+        *occupied |= 1_u8.wrapping_shl(ind as u32);
         children[ind] = Some(new);
     }
 }
