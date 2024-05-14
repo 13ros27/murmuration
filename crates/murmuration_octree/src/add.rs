@@ -89,14 +89,14 @@ impl<D, P: Point> Octree<D, P> {
         shared: u8,
         depth: u8,
     ) -> BranchKey {
-        let dir1 = point1.nth(shared) as usize;
-        let dir2 = point2.nth(shared) as usize;
+        let dir1 = point1.nth(shared);
+        let dir2 = point2.nth(shared);
         let mut children = [None, None, None, None, None, None, None, None];
-        children[dir1] = Some(child1);
-        children[dir2] = Some(child2);
+        children[dir1 as usize] = Some(child1);
+        children[dir2 as usize] = Some(child2);
         let split = self.add_branch(Branch::Split {
             children,
-            occupied: 2,
+            occupied: (1 << dir1) | (1 << dir2),
             depth: shared + 1,
         });
 
@@ -127,9 +127,7 @@ impl<D, P: Point> Octree<D, P> {
         else {
             unreachable!()
         };
-        if children[ind].is_none() {
-            *occupied += 1;
-        }
+        *occupied |= 1 << ind;
         children[ind] = Some(new);
     }
 }
