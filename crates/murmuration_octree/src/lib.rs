@@ -212,12 +212,21 @@ where
     P::Data: Debug,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Octree")
-            .field("root", &self.root)
-            .field(
-                "branches",
-                &self.branches.iter().collect::<BTreeMap<_, _>>(),
-            )
-            .finish()
+        let root: u32 = self.root.unwrap().0.into();
+        write!(
+            f,
+            "Octree {{\n{}\n}}",
+            self.branches
+                .iter()
+                .map(|(k, v)| {
+                    format!(
+                        "{:2}{}{v:?}",
+                        k,
+                        if k == root as usize { ">>" } else { "  " }
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join(",\n")
+        )
     }
 }
