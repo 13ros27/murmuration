@@ -23,8 +23,8 @@ pub type TransformQuery<'w, 's, D, F = ()> = SpatialQuery<'w, 's, Transform, D, 
 /// A system parameter for easy spatial querying.
 ///
 /// The first generic specifies what type the spatial tree is defined over and is autofilled to
-/// [`Transform`](`bevy_transform::prelude::Transform`) by [`TransformQuery`]. The other two are the
-/// same as the data and filter types on [`Query`](`bevy_ecs::prelude::Query`).
+/// [`Transform`](`bevy::prelude::Transform`) by [`TransformQuery`]. The other two are the
+/// same as the data and filter types on [`Query`].
 #[cfg_attr(not(feature = "change_detection"), derive(SystemParam))]
 pub struct SpatialQuery<'w, 's, P, D, F = ()>
 where
@@ -42,12 +42,12 @@ where
     D: QueryData,
     F: QueryFilter,
 {
-    /// Returns an immutable reference to the underlying [`Query`](bevy_ecs::prelude::Query`).
+    /// Returns an immutable reference to the underlying [`Query`].
     pub fn as_query(&self) -> &Query<'w, 's, D, (F, With<Transform>)> {
         &self.query
     }
 
-    /// Returns a mutable reference to the underlying [`Query`](bevy_ecs::prelude::Query`).
+    /// Returns a mutable reference to the underlying [`Query`].
     pub fn as_query_mut(&mut self) -> &mut Query<'w, 's, D, (F, With<Transform>)> {
         &mut self.query
     }
@@ -56,8 +56,7 @@ where
     ///
     /// # Example
     /// ```
-    /// # use bevy_ecs::prelude::*;
-    /// # use bevy_transform::prelude::*;
+    /// # use bevy::prelude::*;
     /// # use murmuration::TransformQuery;
     /// # #[derive(Component)]
     /// # struct Player;
@@ -84,8 +83,7 @@ where
     ///
     /// # Example
     /// ```
-    /// # use bevy_ecs::prelude::*;
-    /// # use bevy_transform::prelude::*;
+    /// # use bevy::prelude::*;
     /// # use murmuration::TransformQuery;
     /// # #[derive(Component)]
     /// # struct Player;
@@ -123,8 +121,7 @@ where
     ///
     /// # Example
     /// ```
-    /// # use bevy_ecs::prelude::*;
-    /// # use bevy_transform::prelude::*;
+    /// # use bevy::prelude::*;
     /// # use murmuration::TransformQuery;
     /// # #[derive(Component)]
     /// # struct Player;
@@ -152,8 +149,7 @@ where
     ///
     /// # Example
     /// ```
-    /// # use bevy_ecs::prelude::*;
-    /// # use bevy_transform::prelude::*;
+    /// # use bevy::prelude::*;
     /// # use murmuration::TransformQuery;
     /// # #[derive(Component)]
     /// # struct Player;

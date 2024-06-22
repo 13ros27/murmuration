@@ -46,9 +46,7 @@ impl<P: Component + Point> SpatialTree<P> {
     ///
     /// # Example
     /// ```
-    /// # use bevy::prelude::Vec3;
-    /// # use bevy_ecs::prelude::*;
-    /// # use bevy_transform::prelude::*;
+    /// # use bevy::prelude::*;
     /// # use murmuration::SpatialTree;
     /// /// Prints one of the entities at (0, 0, 0)
     /// fn on_centre_system(tree: Res<SpatialTree<Transform>>) {
@@ -66,9 +64,7 @@ impl<P: Component + Point> SpatialTree<P> {
     ///
     /// # Example
     /// ```
-    /// # use bevy::prelude::Vec3;
-    /// # use bevy_ecs::prelude::*;
-    /// # use bevy_transform::prelude::*;
+    /// # use bevy::prelude::*;
     /// # use murmuration::SpatialTree;
     /// /// Prints all the entities at exactly (0, 0, 0)
     /// fn on_centre_system(tree: Res<SpatialTree<Transform>>) {
@@ -85,9 +81,7 @@ impl<P: Component + Point> SpatialTree<P> {
     ///
     /// # Example
     /// ```
-    /// # use bevy::prelude::Vec3;
-    /// # use bevy_ecs::prelude::*;
-    /// # use bevy_transform::prelude::*;
+    /// # use bevy::prelude::*;
     /// # use murmuration::SpatialTree;
     /// /// Prints all the entities within 10 of (0, 0, 0)
     /// fn near_centre_system(tree: Res<SpatialTree<Transform>>) {

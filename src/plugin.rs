@@ -28,10 +28,7 @@ mod sealed {
 /// This is typically used to track `Transform` with `SpatialPlugin::<Transform>::new()`, and
 /// added to the app with
 /// ```
-/// # use bevy::DefaultPlugins;
-/// # use bevy_app::prelude::*;
-/// # use bevy_ecs::prelude::*;
-/// # use bevy_transform::prelude::*;
+/// # use bevy::prelude::*;
 /// # use murmuration::SpatialPlugin;
 /// App::new().add_plugins((DefaultPlugins, SpatialPlugin::<Transform>::new()));
 /// ```
