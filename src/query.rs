@@ -1,15 +1,15 @@
-use bevy_ecs::{
+use bevy::ecs::{
     prelude::*,
     query::{QueryData, QueryFilter, ROQueryItem},
     system::SystemParam,
 };
-use bevy_transform::components::Transform;
+use bevy::transform::components::Transform;
 use murmuration_octree::Point;
 
 #[cfg(feature = "change_detection")]
 use {
     crate::{ecs_utils::filter::Filter, plugin::OldPosition},
-    bevy_ecs::{
+    bevy::ecs::{
         archetype::Archetype, component::Tick, system::SystemMeta,
         world::unsafe_world_cell::UnsafeWorldCell,
     },

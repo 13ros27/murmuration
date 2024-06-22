@@ -13,10 +13,7 @@ default = ["change_detection"]
 change_detection = []
 
 [dependencies]
-bevy_app = { version = "0.14.0-rc.3", default-features = false }
-bevy_ecs = { version = "0.14.0-rc.3", default-features = false }
-bevy_log = { version = "0.14.0-rc.3", default-features = false }
-bevy_transform = { version = "0.14.0-rc.3", default-features = false }
+bevy = { version = "0.14.0-rc.3", default-features = false }
 murmuration_octree = { path = "crates/murmuration_octree", features = ["bevy_transform"] }
 
 [dev-dependencies]

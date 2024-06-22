@@ -1,12 +1,12 @@
-use bevy_app::{App, Plugin};
-use bevy_ecs::prelude::*;
+use bevy::app::{App, Plugin};
+use bevy::ecs::prelude::*;
 use murmuration_octree::{Point, PointData};
 use std::marker::PhantomData;
 
 use crate::SpatialTree;
 
 mod sealed {
-    use bevy_ecs::{prelude::*, query::QueryFilter};
+    use bevy::ecs::{prelude::*, query::QueryFilter};
 
     pub trait OptComponent: Send + Sync + 'static {
         type Bundle<P: Component>: Bundle;

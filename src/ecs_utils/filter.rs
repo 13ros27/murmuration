@@ -1,4 +1,4 @@
-use bevy_ecs::{
+use bevy::ecs::{
     archetype::Archetype,
     component::{ComponentId, Components, Tick},
     prelude::*,

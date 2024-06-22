@@ -1,4 +1,4 @@
-use bevy_ecs::prelude::*;
+use bevy::ecs::prelude::*;
 use murmuration_octree::{Octree, Point, PointData};
 
 use crate::{ecs_utils::into_query::IntoQuery, plugin::OldPosition};

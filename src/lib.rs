@@ -10,10 +10,7 @@
 //! all entities at or near a point in space.
 //!
 //! ```
-//! # use bevy::prelude::{DefaultPlugins, Time, Vec3};
-//! # use bevy_app::prelude::*;
-//! # use bevy_ecs::prelude::*;
-//! # use bevy_transform::prelude::*;
+//! # use bevy::prelude::*;
 //! # #[derive(Component)]
 //! # struct Player;
 //! # #[derive(Component)]

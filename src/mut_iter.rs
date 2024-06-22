@@ -1,4 +1,4 @@
-use bevy_ecs::{
+use bevy::ecs::{
     prelude::*,
     query::{QueryData, QueryFilter},
 };
