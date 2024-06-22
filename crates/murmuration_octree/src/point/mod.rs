@@ -96,7 +96,7 @@ impl<P: Point> PointData<P> {
     }
 
     pub(crate) fn closest_distance_new(&self, centre: &Self, depth: u8) -> P::Data {
-        let shift = P::MAX_DEPTH - depth + 1;
+        let shift = P::MAX_DEPTH - depth - 1;
         let increase_mask = <P::Data as OrderedBinary>::Ordered::MAX.overflowing_shr(depth as u32);
 
         let mut dist = P::Data::ZERO;
