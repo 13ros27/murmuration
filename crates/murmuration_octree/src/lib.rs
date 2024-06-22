@@ -1,6 +1,7 @@
 #![forbid(missing_docs)]
 #![warn(clippy::pedantic)]
 #![allow(
+    clippy::cast_lossless,
     clippy::cast_possible_truncation,
     clippy::module_name_repetitions,
     clippy::must_use_candidate,
@@ -20,6 +21,7 @@ mod get;
 mod impls;
 mod point;
 mod remove;
+mod traverse;
 mod within;
 
 pub use point::{ordered::OrderedBinary, Point, PointData};
@@ -181,7 +183,7 @@ where
             } => f
                 .debug_struct("Branch::Split")
                 .field("children", children)
-                .field("occupied", occupied)
+                .field("occupied", &format!("{occupied:0>08b}"))
                 .field("depth", depth)
                 .finish(),
             Branch::Skip {

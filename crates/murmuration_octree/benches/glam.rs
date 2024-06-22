@@ -7,13 +7,13 @@ use std::num::NonZeroU64;
 
 criterion_group!(
     all,
-    add_many,
-    add_many_spatialtree,
-    get,
-    get_spatialtree,
+    // add_many,
+    // add_many_spatialtree,
+    // get,
+    // get_spatialtree,
     within_many,
-    remove_many,
-    remove_many_spatialtree,
+    // remove_many,
+    // remove_many_spatialtree,
 );
 criterion_main!(all);
 
@@ -109,7 +109,7 @@ fn within_many(c: &mut Criterion) {
     c.bench_function("within_1000", |b| {
         b.iter(|| {
             black_box(
-                tree.within(
+                tree.within_new(
                     &UVec3::new(
                         uniform.sample(&mut rng),
                         uniform.sample(&mut rng),
@@ -124,7 +124,7 @@ fn within_many(c: &mut Criterion) {
     c.bench_function("within_10000", |b| {
         b.iter(|| {
             black_box(
-                tree.within(
+                tree.within_new(
                     &UVec3::new(
                         uniform.sample(&mut rng),
                         uniform.sample(&mut rng),
@@ -154,7 +154,7 @@ fn within_many(c: &mut Criterion) {
     c.bench_function("within_1000_f32", |b| {
         b.iter(|| {
             black_box(
-                tree.within(
+                tree.within_new(
                     &Vec3::new(
                         uniform.sample(&mut rng),
                         uniform.sample(&mut rng),

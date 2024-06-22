@@ -26,3 +26,11 @@ spatialtree = "0.1.1"
 name = "glam"
 harness = false
 required-features = ["glam"]
+
+[[example]]
+name = "basic_test"
+required-features = ["glam"]
+
+[[test]]
+name = "within"
+required-features = ["glam"]

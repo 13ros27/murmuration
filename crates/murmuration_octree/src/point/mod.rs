@@ -76,9 +76,11 @@ impl<P: Point> PointData<P> {
                 0.into()
             } else {
                 self.0[i] >> (shift + 1) << (shift + 1)
-            } | (ind_part >> (2 - i as u8) << shift);
+            } | (ind_part >> (2 - i as u8).overflowing_shl(shift as u32).0);
             let centre_data = P::Data::from_ordered(centre.0[i]);
-            let centre = centre.0[i] >> shift << shift;
+            let centre = centre.0[i]
+                .overflowing_shr(shift as u32)
+                .overflowing_shl(shift as u32);
             dist = dist
                 + match child.cmp(&centre) {
                     Ordering::Equal => P::Data::ZERO,
@@ -93,6 +95,29 @@ impl<P: Point> PointData<P> {
         dist
     }
 
+    pub(crate) fn closest_distance_new(&self, centre: &Self, depth: u8) -> P::Data {
+        let shift = P::MAX_DEPTH - depth + 1;
+        let increase_mask = <P::Data as OrderedBinary>::Ordered::MAX.overflowing_shr(depth as u32);
+
+        let mut dist = P::Data::ZERO;
+        for i in 0..=2 {
+            let centre_data = P::Data::from_ordered(centre.0[i]);
+            let centre_cut = centre.0[i].clear_lower(shift);
+            let child_cut = self.0[i].clear_lower(shift);
+
+            dist = dist
+                + match child_cut.cmp(&centre_cut) {
+                    Ordering::Equal => P::Data::ZERO,
+                    Ordering::Less => centre_data
+                        .distance_squared(&P::Data::from_ordered(child_cut | increase_mask)),
+                    Ordering::Greater => {
+                        centre_data.distance_squared(&P::Data::from_ordered(child_cut))
+                    }
+                };
+        }
+        dist
+    }
+
     /// Combine an index from .nth with self at the given depth
     pub(crate) fn combine_ind(&self, ind: u8, depth: u8) -> Self {
         let shift = P::MAX_DEPTH - depth + 1;
@@ -101,9 +126,9 @@ impl<P: Point> PointData<P> {
         let ind_1: <P::Data as OrderedBinary>::Ordered = (ind & 1).into();
         if shift >= 32 {
             PointData([
-                ind_4 >> (shift - 3),
-                ind_2 >> (shift - 2),
-                ind_1 >> (shift - 1),
+                ind_4 << (shift - 3),
+                ind_2 << (shift - 2),
+                ind_1 << (shift - 1),
             ])
         } else {
             PointData([

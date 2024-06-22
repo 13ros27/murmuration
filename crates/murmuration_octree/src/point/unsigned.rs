@@ -35,6 +35,16 @@ pub trait Unsigned:
     const ZERO: Self;
     const MAX: Self;
     fn leading_zeros(self) -> u8;
+    fn overflowing_shl(self, rhs: u32) -> Self;
+    fn overflowing_shr(self, rhs: u32) -> Self;
+
+    fn clear_lower(self, n: u8) -> Self {
+        if n == 32 {
+            Self::ZERO
+        } else {
+            self >> n << n
+        }
+    }
 }
 
 impl Unsigned for u8 {
@@ -43,12 +53,24 @@ impl Unsigned for u8 {
     fn leading_zeros(self) -> u8 {
         self.leading_zeros() as u8
     }
+    fn overflowing_shl(self, rhs: u32) -> Self {
+        self.overflowing_shl(rhs).0
+    }
+    fn overflowing_shr(self, rhs: u32) -> Self {
+        self.overflowing_shr(rhs).0
+    }
 }
 impl Unsigned for u16 {
     const ZERO: u16 = 0;
     const MAX: u16 = u16::MAX;
     fn leading_zeros(self) -> u8 {
         self.leading_zeros() as u8
+    }
+    fn overflowing_shl(self, rhs: u32) -> Self {
+        self.overflowing_shl(rhs).0
+    }
+    fn overflowing_shr(self, rhs: u32) -> Self {
+        self.overflowing_shr(rhs).0
     }
 }
 impl Unsigned for u32 {
@@ -57,6 +79,12 @@ impl Unsigned for u32 {
     fn leading_zeros(self) -> u8 {
         self.leading_zeros() as u8
     }
+    fn overflowing_shl(self, rhs: u32) -> Self {
+        self.overflowing_shl(rhs).0
+    }
+    fn overflowing_shr(self, rhs: u32) -> Self {
+        self.overflowing_shr(rhs).0
+    }
 }
 impl Unsigned for u64 {
     const ZERO: u64 = 0;
@@ -64,11 +92,23 @@ impl Unsigned for u64 {
     fn leading_zeros(self) -> u8 {
         self.leading_zeros() as u8
     }
+    fn overflowing_shl(self, rhs: u32) -> Self {
+        self.overflowing_shl(rhs).0
+    }
+    fn overflowing_shr(self, rhs: u32) -> Self {
+        self.overflowing_shr(rhs).0
+    }
 }
 impl Unsigned for u128 {
     const ZERO: u128 = 0;
     const MAX: u128 = u128::MAX;
     fn leading_zeros(self) -> u8 {
         self.leading_zeros() as u8
+    }
+    fn overflowing_shl(self, rhs: u32) -> Self {
+        self.overflowing_shl(rhs).0
+    }
+    fn overflowing_shr(self, rhs: u32) -> Self {
+        self.overflowing_shr(rhs).0
     }
 }

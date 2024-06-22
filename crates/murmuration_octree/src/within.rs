@@ -43,6 +43,7 @@ impl<'a, D, P: Point> Iterator for Within<'a, D, P> {
                 } => {
                     for i in self.parents[0].1.map_or(0, |n| n + 1)..8 {
                         if let Some(child) = children[i as usize] {
+                            println!("{:?}", depth);
                             let closest = self.point.closest_distance(i, &self.centre, *depth);
                             if closest <= self.sqr_dist || closest.is_irrelevant() {
                                 self.parents[0].1 = Some(i);

@@ -91,7 +91,7 @@ impl<P: Component + Point> SpatialTree<P> {
     /// }
     /// ```
     pub fn within(&self, point: &P, distance: P::Data) -> impl Iterator<Item = Entity> + '_ {
-        self.0.within(point, distance).copied()
+        self.0.within_new(point, distance).copied()
     }
 
     /// Updates the spatial tree with any changes to the entities passed in.
