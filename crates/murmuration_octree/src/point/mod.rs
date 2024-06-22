@@ -102,8 +102,8 @@ impl<P: Point> PointData<P> {
         let mut dist = P::Data::ZERO;
         for i in 0..=2 {
             let centre_data = P::Data::from_ordered(centre.0[i]);
-            let centre_cut = centre.0[i].clear_lower(shift);
-            let child_cut = self.0[i].clear_lower(shift);
+            let centre_cut = centre.0[i] >> shift << shift;
+            let child_cut = self.0[i] >> shift << shift;
 
             dist = dist
                 + match child_cut.cmp(&centre_cut) {

@@ -37,14 +37,6 @@ pub trait Unsigned:
     fn leading_zeros(self) -> u8;
     fn overflowing_shl(self, rhs: u32) -> Self;
     fn overflowing_shr(self, rhs: u32) -> Self;
-
-    fn clear_lower(self, n: u8) -> Self {
-        if n == 32 {
-            Self::ZERO
-        } else {
-            self >> n << n
-        }
-    }
 }
 
 impl Unsigned for u8 {
