@@ -13,7 +13,6 @@
 //! stored item.
 use nonmax::NonMaxU32;
 use slab::Slab;
-use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
 
 mod add;

@@ -218,8 +218,15 @@ where
         SpatialQuerySet::<P, D, F>::init_state(world, system_meta)
     }
 
-    fn new_archetype(state: &mut Self::State, archetype: &Archetype, system_meta: &mut SystemMeta) {
-        SpatialQuerySet::<P, D, F>::new_archetype(state, archetype, system_meta);
+    unsafe fn new_archetype(
+        state: &mut Self::State,
+        archetype: &Archetype,
+        system_meta: &mut SystemMeta,
+    ) {
+        // SAFETY: We pass all safety invariants from the inner call to this function
+        unsafe {
+            SpatialQuerySet::<P, D, F>::new_archetype(state, archetype, system_meta);
+        }
     }
 
     unsafe fn get_param<'world, 'state>(

@@ -60,7 +60,7 @@ impl<P: Component + Point, F: sealed::OptComponent> Plugin for SpatialPlugin<P, 
     fn build(&self, app: &mut App) {
         // This is required to fulfil the safety invariants for SpatialMutIter
         assert!(
-            app.world.get_resource::<SpatialTree<P>>().is_none(),
+            app.world().get_resource::<SpatialTree<P>>().is_none(),
             "Setting up a SpatialPlugin for a component that already has a SpatialTree is invalid \
             as it would result in duplicated entities in the tree."
         );
@@ -70,12 +70,12 @@ impl<P: Component + Point, F: sealed::OptComponent> Plugin for SpatialPlugin<P, 
         //  otherwise move the entity to its new position in the tree and update OldPosition.
         // This will also trigger if F is changed (despite it just being a filter) but if we move
         //  that to an OnAdd observer to prevent this we can get duplicate entities in the tree.
-        app.world.observer(
-            |observer: Observer<OnInsert, F::Bundle<P>>,
+        app.world_mut().observe(
+            |observer: Trigger<OnInsert, F::Bundle<P>>,
              mut commands: Commands,
              mut query: Query<(&P, Option<&mut OldPosition<P>>), F::QueryFilter>,
              mut spatial: ResMut<SpatialTree<P>>| {
-                let entity = observer.source();
+                let entity = observer.entity();
                 if let Ok((point, old_point)) = query.get_mut(entity) {
                     if let Some(mut old_point) = old_point {
                         spatial.move_entity(entity, &old_point.0, point.get_point());
@@ -90,12 +90,12 @@ impl<P: Component + Point, F: sealed::OptComponent> Plugin for SpatialPlugin<P, 
             },
         );
         // Remove an entity from the spatial tree when P gets removed from it (or it is despawned)
-        app.world.observer(
-            |observer: Observer<OnRemove, F::Bundle<P>>,
+        app.world_mut().observe(
+            |trigger: Trigger<OnRemove, F::Bundle<P>>,
              mut commands: Commands,
              query: Query<&P, F::QueryFilter>,
              mut spatial: ResMut<SpatialTree<P>>| {
-                let entity = observer.source();
+                let entity = trigger.entity();
                 if let Ok(point) = query.get(entity) {
                     spatial.remove(entity, point);
                     commands.entity(entity).remove::<OldPosition<P>>();

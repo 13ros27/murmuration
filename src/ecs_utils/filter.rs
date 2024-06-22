@@ -1,6 +1,6 @@
 use bevy_ecs::{
     archetype::Archetype,
-    component::{ComponentId, Tick},
+    component::{ComponentId, Components, Tick},
     prelude::*,
     query::{FilteredAccess, QueryData, QueryFilter, WorldQuery},
     storage::{Table, TableRow},
@@ -56,8 +56,8 @@ unsafe impl<D: QueryData> WorldQuery for Filter<D> {
         D::init_state(world)
     }
 
-    fn get_state(world: &World) -> Option<Self::State> {
-        D::get_state(world)
+    fn get_state(components: &Components) -> Option<Self::State> {
+        D::get_state(components)
     }
 
     fn matches_component_set(
