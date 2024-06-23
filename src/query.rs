@@ -107,8 +107,8 @@ where
     /// - [`get`](Self::get) for immutable queries
     /// - [`within_mut`](Self::within_mut) to get all within a radius rather than only at the point
     /// exactly
-    pub fn get_mut<'a>(
-        &'a mut self,
+    pub fn get_mut(
+        &mut self,
         point: &P,
     ) -> impl Iterator<Item = D::Item<'_>> + Captures<'w> + Captures<'s> {
         // SAFETY: .get will never return the same element twice and the tree cannot contain
@@ -170,8 +170,8 @@ where
     /// ```
     /// # See also
     /// - [`within`](Self::within) for immutable queries
-    pub fn within_mut<'a>(
-        &'a mut self,
+    pub fn within_mut(
+        &mut self,
         point: &P,
         distance: P::Data,
     ) -> impl Iterator<Item = D::Item<'_>> + Captures<'w> + Captures<'s> {
