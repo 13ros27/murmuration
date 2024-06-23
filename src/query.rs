@@ -4,6 +4,7 @@ use bevy::ecs::{
     system::SystemParam,
 };
 use bevy::transform::components::Transform;
+use fix_hidden_lifetime_bug::Captures;
 use murmuration_octree::Point;
 
 #[cfg(feature = "change_detection")]
@@ -109,7 +110,7 @@ where
     pub fn get_mut<'a>(
         &'a mut self,
         point: &P,
-    ) -> SpatialMutIter<'w, 's, 'a, impl Iterator<Item = Entity> + 'a, D, (F, With<Transform>)>
+    ) -> impl Iterator<Item = D::Item<'_>> + Captures<'w> + Captures<'s>
     {
         // SAFETY: .get will never return the same element twice and the tree cannot contain
         //  duplicates (as only the observers can change it)
@@ -174,8 +175,8 @@ where
         &'a mut self,
         point: &P,
         distance: P::Data,
-    ) -> SpatialMutIter<'w, 's, 'a, impl Iterator<Item = Entity> + 'a, D, (F, With<Transform>)>
-    {
+        // ) -> SpatialMutIter<'w, 's, 'a, impl Iterator<Item = Entity> + 'a, D, (F, With<Transform>)>
+    ) -> impl Iterator<Item = D::Item<'_>> + Captures<'w> + Captures<'s> {
         // SAFETY: .within will never return the same element twice and the tree cannot contain
         //  duplicates (as only the observers can change it)
         unsafe { SpatialMutIter::new(self.tree.within(point, distance), &mut self.query) }
